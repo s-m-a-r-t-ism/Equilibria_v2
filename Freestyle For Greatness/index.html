@@ -643,7 +643,8 @@ const player = {
     const horizon = this.ctx.currentTime + .14;
     while (this.T0 + stepTime(this.nextGS) < horizon) { playStep(this.eng, this.T0, this.nextGS); this.nextGS++; }
   },
-  songTime() { return this.ctx.currentTime - this.T0; },
+  // what the ear hears now: the audio clock minus the time sound needs to reach the speaker
+  songTime() { return this.ctx.currentTime - this.T0 - (this.ctx.outputLatency || this.ctx.baseLatency || 0); },
   async togglePause() {
     if (!this.ctx) return;
     if (this.paused) { await this.ctx.resume(); this.paused = false; }
@@ -668,7 +669,7 @@ const hudMv = $('hudMv'), hudBar = $('hudBar'), hint = $('hint');
 const introEl = $('intro'), finaleEl = $('finale'), pauseBtn = $('pauseBtn');
 
 let W = 0, H = 0, DPR = 1, U = 0;
-let clip = false, clipT = 0;
+let clip = false, clipT = 0, forceLabels = false;
 const wallMs = () => clip ? clipT * 1000 : performance.now();
 
 // palettes per movement: background core, background edge, particle, accent
@@ -803,16 +804,18 @@ function addConstellation(pts, w, label, user) {
   const s = .17 / w; // offsets in units of the short screen side
   const stars = [];
   chain.forEach(i => stars.push(pts[2 * i] * s, pts[2 * i + 1] * s));
+  let low = 0;
+  for (let k = 1; k < stars.length; k += 2) low = Math.max(low, stars[k]);
   // find an empty place in the sky
   let best = null, bestD = -1;
   for (let a = 0; a < 70; a++) {
-    const c = { x: .08 + Math.random() * .84, y: .1 + Math.random() * .6 };
+    const c = { x: .08 + Math.random() * .84, y: .1 + Math.random() * .66 };
     let md = 9;
     for (const o of sky) md = Math.min(md, Math.hypot((c.x - o.cx) * W / U, (c.y - o.cy) * H / U));
     md = Math.min(md, Math.hypot((c.x - .5) * W / U, (c.y - .45) * H / U) * 1.6); // keep the centre for the words
     if (md > bestD) { bestD = md; best = c; }
   }
-  sky.push({ cx: best.x, cy: best.y, stars, label, born: wallMs(), user: !!user });
+  sky.push({ cx: best.x, cy: best.y, stars, low, label, born: wallMs(), user: !!user });
 }
 
 // pointer: it swirls the dust, draws light, and plays bells in key
@@ -1064,7 +1067,7 @@ function frame(now, dt) {
   }
 
   // constellations
-  const showLabels = finaleShown || (now !== null && now >= barTime(80));
+  const showLabels = finaleShown || forceLabels || (now !== null && now >= barTime(80));
   ctx.lineWidth = .6;
   ctx.font = `300 9px ${MONO_FONT}`;
   ctx.textAlign = 'center';
@@ -1089,7 +1092,7 @@ function frame(now, dt) {
     let near = pActive && Math.hypot(pointer.x - ox, pointer.y - oy) < U * .12;
     if (showLabels || near || c.user) {
       ctx.fillStyle = rgba(col, ((near ? .7 : .34) * age).toFixed(3));
-      ctx.fillText(c.label, ox, oy + U * .1);
+      ctx.fillText(c.label, ox, oy + c.low * U + 16);
     }
   }
 
@@ -1343,6 +1346,7 @@ window.FFG = {
     palTarget = PAL[0]; Object.assign(pal, JSON.parse(JSON.stringify(PAL[0])));
   },
   frame(t, dt) { clipT = t; frame(t, dt); },
+  setLabels(v) { forceLabels = !!v; },
   async renderSong(fromBar, toBar, sampleRate, solo) {
     fromBar = fromBar || 0; toBar = toBar || END_BAR + 4; sampleRate = sampleRate || 44100;
     const dur = barTime(toBar) - barTime(fromBar) + 4.5;

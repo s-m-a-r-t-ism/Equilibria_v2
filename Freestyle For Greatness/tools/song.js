@@ -1,6 +1,10 @@
-const { chromium } = require('/opt/node-tools/node_modules/playwright');
+// Render the song offline to a WAV file: node song.js [fromBar] [toBar] [out.wav]
+// SOLO=kick,bass renders only the named voices (used for mixing).
+let chromium;
+try { ({ chromium } = require('playwright')); } catch (e) { ({ chromium } = require('/opt/node-tools/node_modules/playwright')); }
+const path = require('path');
 const fs = require('fs');
-const url = 'file:///home/user/Equilibria_v2/Freestyle%20For%20Greatness/index.html';
+const url = 'file://' + encodeURI(path.resolve(__dirname, '..', 'index.html'));
 const [from, to, out] = [+(process.argv[2]||0), +(process.argv[3]||86), process.argv[4]||'song.wav'];
 (async () => {
   const b = await chromium.launch();
