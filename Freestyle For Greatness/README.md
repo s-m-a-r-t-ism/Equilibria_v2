@@ -10,6 +10,20 @@ lichtdeeltjes die zich even tot een woord vormen en daarna als sterrenbeeld aan
 de hemel blijven hangen. Aan het eind heeft elk van de 32 regels een eigen
 sterrenbeeld achtergelaten, en dan is het jouw beurt.
 
+## Het idee
+
+Freestylen is spreken zonder papier: je weet de maat, je weet niet wat er
+komt, en je springt toch. Het gedicht gaat over grootsheid, maar niet de
+grootsheid van goud en standbeelden. Het beweert dat grootsheid klein begint:
+een mond die opengaat in het donker.
+
+Daarom is ook het werk zelf een freestyle. Niets is opgenomen. Elke keer dat
+iemand op Begin drukt, wordt de beat opnieuw gespeeld door een machine die
+hem op dat moment uitrekent, met net andere ruis, net andere sterren. Elk
+woord bestaat even en valt dan uiteen, maar laat een sterrenbeeld achter.
+Aan het eind is de hemel een kaart van alles wat gezegd is. En dan neem jij
+het over.
+
 ## Bekijken
 
 Open `index.html` in een moderne browser (Chrome, Safari, Firefox, Edge).
@@ -30,8 +44,11 @@ Zet het geluid aan, een koptelefoon helpt. Druk op **Begin**.
 | `index.html` | Het werk zelf, standalone, geen installatie nodig |
 | `freestyle.html` | Dezelfde pagina als artifact-body (zonder `<html>`-skelet) |
 | `build.py` | Maakt `index.html` uit `freestyle.html` |
-| `media/` | Het lied als audiobestand en de clip als video, offline gerenderd uit exact dezelfde code |
-| `tools/` | De scripts waarmee het lied en de clip zijn gerenderd |
+| `media/freestyle-for-greatness.mp3` / `.flac` | Het lied, 3:54 plus uitfade, gemasterd op -14 LUFS |
+| `media/freestyle-for-greatness-clip.mp4` | De clip, 1920×1080, 30 fps |
+| `media/freestyle-for-greatness-verticaal.mp4` | De clip staand, 1080×1920, voor telefoon |
+| `media/poster.jpg` | Een still van 3200×4000: GREATNESS boven de kaart van alle 32 sterrenbeelden |
+| `tools/` | De scripts waarmee lied, clip en poster offline uit exact dezelfde code zijn gerenderd |
 
 ## De partituur
 
@@ -63,7 +80,7 @@ deeltjes bewegen.
 > ik schrijf erin met één vinger, op beslagen glas.\
 > Elk woord is een lucifer. Ik strijk hem langs de lucht.\
 > Een tel lang ben ik vuurtoren, daarna weer gerucht.\
-> Ze zeggen: grootsheid wacht op wie zich netjes heeft bereid.\
+> Ze zeggen: grootsheid komt pas als je alles hebt voorbereid.\
 > Ik zeg: grootsheid is de sprong. De grond komt later, met de tijd.
 
 **II · STOF**
@@ -75,7 +92,7 @@ deeltjes bewegen.
 > Dus als ik happer naar een woord: dat is de oerknal, traag.\
 > Elke stilte in mijn zin is een heelal dat zichzelf iets vraagt.\
 > Ik ben de vonk en ook de as, het vuur en wat het achterlaat,\
-> het stof dat danst in jouw raam, één middag lang, en dan weer gaat.
+> het stof dat in jouw zonlicht danst, één middag lang, en dan weer gaat.
 
 **III · VUUR**
 
@@ -90,7 +107,7 @@ deeltjes bewegen.
 
 **IV · GROOTSHEID**
 
-> En als het stil wordt, als de beat zich terugtrekt als het tij,\
+> En als het stil wordt en de beat zich terugtrekt als het tij,\
 > dan blijft er iets van mij hier hangen. Iets dat zegt: ik was erbij.\
 > Ik vraag geen standbeeld, geen eeuwigheid, geen naam die blijft.\
 > Ik vraag alleen deze ene nacht, waarin je zonder papier schrijft.\

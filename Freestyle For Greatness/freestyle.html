@@ -238,7 +238,7 @@ const POEM = [
     ['ik schrijf erin met één vinger, op beslagen glas.', 'GLAS'],
     ['Elk woord is een lucifer. Ik strijk hem langs de lucht.', 'LUCIFER'],
     ['Een tel lang ben ik vuurtoren, daarna weer gerucht.', 'VUURTOREN'],
-    ['Ze zeggen: grootsheid wacht op wie zich netjes heeft bereid.', 'WACHT'],
+    ['Ze zeggen: grootsheid komt pas als je alles hebt voorbereid.', 'VOORBEREID'],
     ['Ik zeg: grootsheid is de sprong. De grond komt later, met de tijd.', 'SPRONG'],
   ]},
   { n: 'II', title: 'STOF', sub: 'Tweede beweging', lines: [
@@ -249,7 +249,7 @@ const POEM = [
     ['Dus als ik happer naar een woord: dat is de oerknal, traag.', 'OERKNAL'],
     ['Elke stilte in mijn zin is een heelal dat zichzelf iets vraagt.', 'HEELAL'],
     ['Ik ben de vonk en ook de as, het vuur en wat het achterlaat,', 'VONK'],
-    ['het stof dat danst in jouw raam, één middag lang, en dan weer gaat.', 'STOF'],
+    ['het stof dat in jouw zonlicht danst, één middag lang, en dan weer gaat.', 'STOF'],
   ]},
   { n: 'III', title: 'VUUR', sub: 'Derde beweging', lines: [
     ['Nu zet de bas zich schrap en de vloer begint te praten,', 'BAS'],
@@ -262,7 +262,7 @@ const POEM = [
     ['tot elke lettergreep een vlam is, en elke fout wordt goud.', 'GOUD'],
   ]},
   { n: 'IV', title: 'GROOTSHEID', sub: 'Vierde beweging', lines: [
-    ['En als het stil wordt, als de beat zich terugtrekt als het tij,', 'TIJ'],
+    ['En als het stil wordt en de beat zich terugtrekt als het tij,', 'TIJ'],
     ['dan blijft er iets van mij hier hangen. Iets dat zegt: ik was erbij.', 'ERBIJ'],
     ['Ik vraag geen standbeeld, geen eeuwigheid, geen naam die blijft.', 'STANDBEELD'],
     ['Ik vraag alleen deze ene nacht, waarin je zonder papier schrijft.', 'PAPIER'],
@@ -1183,7 +1183,7 @@ function frame(now, dt) {
     let mv = '';
     if (S.kind === 'card' || S.kind === 'line') mv = `${POEM[S.mv].n} · ${POEM[S.mv].title}`;
     else if (S.kind === 'outro') mv = 'Coda';
-    else if (S.kind === 'end') mv = 'Jouw beurt';
+    else if (S.kind === 'end') mv = clip ? 'Einde' : 'Jouw beurt';
     else mv = 'Aftellen';
     if (S.kind === 'line') mv += ` · regel ${S.li + 1}/8`;
     const hb = bar < END_BAR ? `Maat ${String(bar + 1).padStart(3, '0')} / ${END_BAR}` : '84 BPM · D dorisch';
