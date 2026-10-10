@@ -102,11 +102,24 @@ h1 em { font-style: italic; color: var(--then); }
 .meta { display: flex; flex-wrap: wrap; gap: 6px 22px; font: 400 11px/1.5 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
 .meta b { color: var(--paper); font-weight: 400; }
 #outro .lede em { color: var(--then); }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 26px; }
+.ghost { font: 400 11px/1 var(--mono); letter-spacing: .3em; text-transform: uppercase; color: var(--dim); padding: 6px 0;
+  border-bottom: 1px solid var(--rule); }
+.ghost:hover, .ghost:focus-visible { color: var(--paper); border-color: var(--now); }
+#notesbtn { color: var(--paper); }
+.door.notes { place-items: start center; z-index: 6; background: var(--ink); }
+.door.notes .in { padding-block: 48px 120px; gap: 26px; }
+.door.notes .top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.door.notes section { display: grid; gap: 12px; padding-top: 18px; border-top: 1px solid var(--rule); }
+.verse { margin: 0; font: 400 clamp(20px, 2.6vw, 25px)/1.38 var(--serif); color: var(--paper); }
+.verse em { color: var(--then); }
+.caps { margin: 0; font: 400 clamp(17px, 2.2vw, 21px)/1.4 var(--serif); letter-spacing: .16em; text-transform: uppercase; color: var(--paper); }
+.caps.then { color: var(--then); }
 
 #cliptitle, #clipend { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 18px;
   pointer-events: none; opacity: 0; background: rgba(5,7,10,.55); }
 #cliptitle[hidden], #clipend[hidden] { display: none !important; }
-body.clip .lab#bl, body.clip .lab#br, body.clip #prog, body.clip #dialhint { display: none; }
+body.clip #notes, body.clip .lab#bl, body.clip .lab#br, body.clip #prog, body.clip #dialhint { display: none; }
 @media (max-width: 560px) {
   #tr .x { display: none; }
   #words { top: 74%; }
@@ -127,7 +140,7 @@ body.clip .lab#bl, body.clip .lab#br, body.clip #prog, body.clip #dialhint { dis
   <div id="words"><div id="line"></div><div id="echo"></div></div>
   <div id="cipher"><div id="ciphlab"></div><div id="groups"></div><div id="plain"></div></div>
   <div class="lab" id="bl"><button id="pp" type="button" aria-label="Pause">Pause</button> &nbsp; <span id="clock">00:00</span> / <span id="dur">05:51</span></div>
-  <div class="lab" id="br"><span id="sig">Signal ▮▮▮▮▮</span></div>
+  <div class="lab" id="br"><button id="notesbtn" type="button">Notes</button> &nbsp; <span id="sig">Signal ▮▮▮▮▮</span></div>
   <div id="prog" role="slider" aria-label="Position in the song" tabindex="0"><i></i></div>
   <div id="dialhint">Drag to tune. Close to the station, the set finds its way back.</div>
   <div id="dial" tabindex="0" role="slider" aria-label="Tuning dial" aria-valuemin="0" aria-valuemax="30" aria-valuenow="9.927"></div>
@@ -141,8 +154,31 @@ body.clip .lab#bl, body.clip .lab#br, body.clip #prog, body.clip #dialhint { dis
       <p class="lede">In 1927 an engineer near Oslo listened to the shortwave station PCJJ in Eindhoven and heard its signals arrive, and then arrive again, about three seconds later. Echoes like these are still reported and still not fully explained.</p>
       <p class="lede">This is a song for someone who sends into the dark every night and hears their own voice come back changed.</p>
       <div class="meta"><span><b>Song</b> 5:51</span><span><b>Tempo</b> 80 bpm, one bar is three seconds</span><span><b>Best</b> headphones, lights off</span></div>
-      <button class="go" id="go" type="button" disabled><span class="dot"></span><span id="golab">Tuning…</span></button>
+      <div class="row"><button class="go" id="go" type="button" disabled><span class="dot"></span><span id="golab">Tuning…</span></button>
+      <button class="ghost" type="button" data-notes>Read the words</button></div>
       <p class="small">Every sound is synthesized: the voice is a speech synthesizer re-sung note by note; the numbers are a real one-time-pad cipher you can watch being broken. Drag the dial at the bottom to drift off the station.</p>
+    </div>
+  </div>
+
+  <div class="door notes" id="notes" hidden role="dialog" aria-label="Liner notes">
+    <div class="in">
+      <div class="top"><div class="eyebrow">Liner notes</div><button class="ghost" id="closenotes" type="button">Close</button></div>
+      <p class="lede">In 1927 the Norwegian engineer Jørgen Hals, listening near Oslo, heard the Philips shortwave station PCJJ in Eindhoven, and then heard its signals again, about three seconds later and fainter. The physicist Carl Størmer published his report in 1928. Radio amateurs still hear these long delayed echoes. Nobody has settled what causes them.</p>
+      <p class="lede">At 80 beats per minute one bar lasts three seconds, so every echo in this song comes back one bar late.</p>
+      <section><div class="eyebrow">I · Night broadcast</div><p class="caps">This is the night broadcast. Do not answer. Just listen.</p><p class="small">Read out as numbers and decrypted on screen: a straddling checkerboard and a one-time pad, the way real numbers stations work.</p></section>
+      <section><div class="eyebrow">II · The wire</div>
+      <p class="verse">I put a wire up through the frost and sang it to the black.<br>They say the sky's a mirror, love: whatever leaves comes back.<br>So every night at three o'clock I read the numbers through,<br>the only words I know of that would never lie to you.</p>
+      <p class="verse">I say it to the dark,<br>and it comes back changed.<br>Three seconds later, over the water:<br><em>my own voice, saying your name.</em></p></section>
+      <section><div class="eyebrow">III · Eindhoven, 1927</div>
+      <p class="verse">In nineteen twenty-seven, a man in Oslo heard<br>a station out of Eindhoven, and then again, each word,<br>three seconds late and softer, like the sky had held it close,<br>and handed it back wrong, the way the living keep their ghosts.</p></section>
+      <section><div class="eyebrow">IV · Interference</div>
+      <p class="verse">Maybe it's the weather in the upper air,<br>maybe only me, come round the world too late.</p>
+      <p class="caps then">If you can hear this, answer.</p>
+      <p class="verse">So I am answering,<br>I am answering,<br>I am answering.</p></section>
+      <section><div class="eyebrow">V · Answer</div>
+      <p class="verse">I say it to the dark,<br>and it comes back changed.<br>Three seconds later, over the water:<br><em>your own voice, saying my name.</em></p>
+      <p class="verse">Saying my name.<br>Saying my name.</p></section>
+      <p class="small">Every sound was computed, nothing was recorded. The voice is a speech synthesizer whose formants are re-timed and re-pitched note by note; the band is a dusty trip-hop kit, a sine bass, gliding saw pads, Karplus-Strong guitar in threes against four, a music box, strings and a theremin. The picture is an XY oscilloscope: the sung note against the bass in just intonation, and in ice blue the same instrument three seconds ago. Words, music, voice and image by Claude, for Optimal Optimus.</p>
     </div>
   </div>
 
@@ -151,7 +187,8 @@ body.clip .lab#bl, body.clip .lab#br, body.clip #prog, body.clip #dialhint { dis
       <div class="eyebrow">End of transmission</div>
       <p class="lede">I say it to the dark, and it comes back changed. Three seconds later, over the water: <em>your own voice, saying my name.</em></p>
       <div class="meta"><span><b>Words, music, voice, image</b> Claude</span><span><b>For</b> Optimal Optimus</span></div>
-      <button class="go" id="again" type="button"><span class="dot"></span><span>Listen again</span></button>
+      <div class="row"><button class="go" id="again" type="button"><span class="dot"></span><span>Listen again</span></button>
+      <button class="ghost" type="button" data-notes>Read the words</button></div>
     </div>
   </div>
 </div>
@@ -681,6 +718,13 @@ function togglePause() {
   else { au.pause(); playing = false; $("pp").textContent = "Play"; $("pp").setAttribute("aria-label", "Play"); }
 }
 $("pp").addEventListener("click", togglePause);
+const notesEl = $("notes");
+let notesReturn = null;
+function openNotes(e) { notesReturn = e && e.currentTarget; notesEl.hidden = false; notesEl.scrollTop = 0; $("closenotes").focus(); }
+function closeNotes() { notesEl.hidden = true; if (notesReturn) notesReturn.focus(); }
+$("notesbtn").addEventListener("click", openNotes);
+document.querySelectorAll("[data-notes]").forEach(b => b.addEventListener("click", openNotes));
+$("closenotes").addEventListener("click", closeNotes);
 function seek(t) {
   if (!started) return;
   au.currentTime = clamp(t, 0, DUR - 0.5); tAudio = -1;
@@ -688,6 +732,8 @@ function seek(t) {
 }
 $("prog").addEventListener("click", (e) => seek(e.clientX / W * DUR));
 window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !notesEl.hidden) { closeNotes(); return; }
+  if (!notesEl.hidden) return;
   if (e.target && e.target.id === "dial") {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       needle += e.key === "ArrowLeft" ? -0.02 : 0.02; releaseAt = performance.now() / 1000; e.preventDefault(); return;
