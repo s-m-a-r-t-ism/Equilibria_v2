@@ -17,14 +17,14 @@ const AUDIO = process.env.AUDIO || path.join(root, 'build', 'song.wav');
   await p.waitForTimeout(800);
   await p.evaluate(() => document.fonts.ready);
   await p.evaluate(() => LDE.enterClip());
-  const end = +(process.env.T1 || await p.evaluate(() => LDE.TL.end));
+  const end = +(process.env.T1 || await p.evaluate(() => LDE.TL.end + 4));
   const T0 = +(process.env.T0 || 0);
   const args = ['-y', '-hide_banner', '-loglevel', 'error',
     '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-',
     '-ss', String(T0), '-t', String(end - T0), '-i', AUDIO,
     '-map', '0:v', '-map', '1:a',
     '-c:v', 'libx264', '-preset', 'slow', '-crf', process.env.CRF || '19', '-pix_fmt', 'yuv420p', '-tune', 'film',
-    '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', OUT];
+    '-af', 'apad', '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', OUT];
   const ff = spawn('ffmpeg', args, { stdio: ['pipe', 'inherit', 'inherit'] });
   for (let i = 30; i > 0; i--) await p.evaluate(t => LDE.frame(t, 1 / 30), T0 - i / 30);
   const n = Math.round((end - T0) * FPS), t0 = Date.now();

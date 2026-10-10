@@ -190,6 +190,20 @@ def drums_part():
     swell = np.concatenate([np.zeros(1), rs])
     drums.add(swell, tb(24) - len(swell) / SR, 0.45, 0)
     plate_send.add(swell, tb(24) - len(swell) / SR, 0.25)
+    toms = {"hi": Y.tom(196, 1.0, 1), "mid": Y.tom(147, 1.0, 2), "lo": Y.tom(110, 1.0, 3)}
+
+    def fill(bar, big=False):
+        """The last half bar before a new section: toms walking down, snare in between."""
+        seq = [(8, "hi"), (10, "hi"), (11, "mid"), (12, "mid"), (14, "lo"), (15, "lo")] if big else \
+              [(10, "hi"), (12, "mid"), (14, "lo")]
+        for st, k in seq:
+            swing = 0.13 * S16 if st % 2 == 1 else 0.0
+            t = tb(bar, st) + swing
+            drums.add(toms[k], t, 0.5, {"hi": 0.25, "mid": 0.0, "lo": -0.25}[k])
+            plate_send.add(toms[k], t, 0.12)
+        for st in (9, 13):
+            hit("g", bar, st, 2.2)
+
     for bar in range(24, 40):
         pattern_a(bar, bar % 4, hats16=False)
     for bar in range(40, 48):
@@ -225,6 +239,15 @@ def drums_part():
         hit("k", bar, 0, 0.9); hit("k", bar, 8, 0.8)
     for bar in range(88, 98):
         pattern_b(bar, bar % 4)
+    for bar, big in ((39, False), (47, True), (63, False), (71, True), (95, True)):
+        fill(bar, big)
+    # riser into the final chorus: filtered noise climbing through two bars
+    n = Y.secs(2 * BAR)
+    rz = np.random.default_rng(4).normal(0, 1, n)
+    cut = np.geomspace(250, 7000, n)
+    rise = Y.svf(rz, cut, 4.0, 1) * np.linspace(0, 1, n) ** 2
+    drums.add(rise, tb(86), 0.10, 0.0)
+    hall_send.add(rise, tb(86), 0.08)
     # crash at the big moments
     crash = Y.hp(np.random.default_rng(5).normal(0, 1, Y.secs(3.0)), 5000) * np.exp(-np.arange(Y.secs(3.0)) / SR / 0.9)
     for bar in (40, 64, 88, 92, 96, 98):
@@ -428,6 +451,10 @@ def vocals_part():
         t0, ld, hs = V.sing(ln["text"], ln["notes"], voices=under + over, seed=i + 1)
         g = 0.42
         place(lead, ld, t0, g, 0.0)
+        # two quiet doubles, sung again with their own vibrato and drift, a hair late, left and right
+        for k, (dl, pn) in enumerate(((0.014, -0.28), (0.009, 0.28))):
+            td, ldd, _ = V.sing(ln["text"], ln["notes"], seed=i + 200 + 37 * k)
+            place(lead, ldd, td + dl, g * 0.26, pn)
         plate_send.add(ld, t0, g * 0.32)
         hall_send.add(ld, t0, g * 0.12)
         pans = [-0.45, 0.45, -0.7, 0.7, 0.0]

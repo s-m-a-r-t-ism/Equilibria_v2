@@ -220,6 +220,15 @@ def snare(vel=1.0, seed=0, tone=185.0, length=0.32):
     return tape(y * 1.2, 1.4) * vel
 
 
+def tom(freq=120.0, vel=1.0, seed=0):
+    n = secs(0.7)
+    t = np.arange(n) / SR
+    f = freq * (1 + 0.45 * np.exp(-t / 0.04))
+    body = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / 0.28)
+    skin = bp(np.random.default_rng(seed).normal(0, 1, n), 300, 3000) * np.exp(-t / 0.03) * 0.25
+    return tape((body + skin) * 1.2, 1.4) * vel
+
+
 def rim(vel=1.0, seed=0):
     n = secs(0.15)
     t = np.arange(n) / SR

@@ -115,6 +115,9 @@ body.clip .lab#bl, body.clip .lab#br, body.clip #prog, body.clip #dialhint { dis
   #words { top: 74%; }
   #cipher { top: 70%; }
 }
+@media (orientation: portrait) and (min-width: 561px) { #words { top: 67%; } #cipher { top: 68%; } }
+#clipend .lede { font-size: clamp(22px, 3.4vmin, 42px); text-align: center; }
+#cliptitle h1 { font-size: clamp(54px, 9vmin, 150px); }
 @media (prefers-reduced-motion: reduce) { .go { transition: none; } }
 </style>
 
@@ -122,7 +125,7 @@ body.clip .lab#bl, body.clip .lab#br, body.clip #prog, body.clip #dialhint { dis
   <canvas id="cv"></canvas>
   <div class="vignette"></div>
   <div class="lab" id="tl"><b>Long Delayed Echoes</b><br><span class="t" id="sectlab">Carrier</span></div>
-  <div class="lab" id="tr"><b id="utc">03:00:00</b> UTC<br><span id="freq">9.927 MHz</span><span class="x"> · 30.2 m</span></div>
+  <div class="lab" id="tr"><b id="utc">03:00:00</b> UTC<br><span id="freq">9.927 MHz</span><span class="x" id="wl"> · 30.2 m</span></div>
   <div id="sect"></div>
   <div id="words"><div id="line"></div><div id="echo"></div></div>
   <div id="cipher"><div id="ciphlab"></div><div id="groups"></div><div id="plain"></div></div>
@@ -138,7 +141,7 @@ body.clip .lab#bl, body.clip .lab#br, body.clip #prog, body.clip #dialhint { dis
     <div class="in">
       <div class="eyebrow">Station 1927 · 9.927 MHz · nightly at three</div>
       <h1>Long Delayed <em>Echoes</em></h1>
-      <p class="lede">In December 1927 an engineer in Oslo listened to the shortwave station PCJJ in Eindhoven and heard its signals arrive, and then arrive again, about three seconds later. Echoes like these are still reported and still not fully explained.</p>
+      <p class="lede">In 1927 an engineer near Oslo listened to the shortwave station PCJJ in Eindhoven and heard its signals arrive, and then arrive again, about three seconds later. Echoes like these are still reported and still not fully explained.</p>
       <p class="lede">This is a song for someone who sends into the dark every night and hears their own voice come back changed.</p>
       <div class="meta"><span><b>Song</b> 5:51</span><span><b>Tempo</b> 80 bpm, one bar is three seconds</span><span><b>Best</b> headphones, lights off</span></div>
       <button class="go" id="go" type="button" disabled><span class="dot"></span><span id="golab">Tuning…</span></button>
@@ -397,6 +400,9 @@ function drawScope(t, dt, detune) {
 // ------------------------------------------------------------- the dial
 let tuned = STATION, dragging = false, releaseAt = -1, needle = STATION;
 function detuneAmount() { return clamp(Math.abs(needle - STATION) / 0.35, 0, 1); }
+// the set tunes itself in during the carrier, the way the song arrives through the static
+const autoOff = (t) => 0.62 * (1 - smooth((t - 2) / 20));
+let shown = STATION, lastDet = 0;
 function drawDial(t) {
   const c = cx, h = 78, y0 = H - h - (parseFloat(getComputedStyle(document.documentElement).paddingBottom) || 0);
   const y = H - h;
@@ -406,7 +412,7 @@ function drawDial(t) {
   c.beginPath(); c.moveTo(0, y + 0.5); c.lineTo(W, y + 0.5); c.stroke();
   // scale: a window of ±3 MHz around the needle, sliding like a real dial
   const span = W < 600 ? 2.4 : 4.0, pxPer = W / span;
-  const f0 = needle - span / 2;
+  const f0 = shown - span / 2;
   c.font = "10px " + getComputedStyle(document.documentElement).getPropertyValue("--mono");
   c.textAlign = "center";
   for (let f = Math.ceil(f0 * 20) / 20; f < f0 + span; f += 0.05) {
@@ -558,8 +564,9 @@ function updateLabels(t) {
   se.style.opacity = so.toFixed(3);
   const u = Math.floor(10800 + t);
   $("utc").textContent = [Math.floor(u / 3600) % 24, Math.floor(u / 60) % 60, u % 60].map(n => String(n).padStart(2, "0")).join(":");
-  $("freq").textContent = needle.toFixed(3) + " MHz";
-  const st = stateAt(t, detuneAmount()).stat;
+  $("freq").textContent = shown.toFixed(3) + " MHz";
+  $("wl").textContent = " · " + (299.792458 / shown).toFixed(1) + " m";
+  const st = stateAt(t, lastDet).stat;
   const bars = clamp(Math.round(5 - st * 6), 0, 5);
   $("sig").textContent = "Signal " + "▮".repeat(bars) + "▯".repeat(5 - bars);
   $("clock").textContent = mmss(t);
@@ -568,7 +575,10 @@ function updateLabels(t) {
 
 // ------------------------------------------------------------- frame
 function frame(t, dt) {
-  const det = detuneAmount();
+  const ao = (started || clipMode) ? autoOff(t) : 0;
+  shown = needle - ao;
+  const det = Math.max(detuneAmount(), ao / 0.62 * 0.45);
+  lastDet = det;
   if (clipMode) {
     $("cliptitle").style.opacity = (smooth((t + 0.5) / 1.5) * smooth((8.5 - t) / 2.0)).toFixed(3);
     $("clipend").style.opacity = smooth((t - (TL.final_echo + 4.2)) / 1.2).toFixed(3);

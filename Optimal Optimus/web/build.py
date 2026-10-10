@@ -35,4 +35,6 @@ html = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
         + body.replace('<div id="stage">', '</head>\n<body>\n<div id="stage">', 1) + "\n</body>\n</html>\n")
 (site / "index.html").write_text(html, encoding="utf-8")
+poster = (here / "poster.html").read_text(encoding="utf-8").replace("/*FONTS*/", "\n".join(css), 1)
+(root / "build" / "poster.html").write_text(poster, encoding="utf-8")
 print("site/index.html", len(html), "bytes")
