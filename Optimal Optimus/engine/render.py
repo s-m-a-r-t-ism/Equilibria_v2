@@ -438,7 +438,8 @@ def lde(sig_mono, t, gain, p, flutter_seed):
     warp = tt + 0.0012 * np.sin(2 * np.pi * 0.7 * tt + r.uniform(0, 6)) + 0.00012 * np.sin(2 * np.pi * 5.3 * tt)
     y = np.interp(warp * SR, np.arange(n), sig_mono)
     y = Y.bp(y, 380, 3200, 2)
-    y = Y.tape(y * 2.2, 2.0) * 0.6
+    pk = np.abs(y).max() + 1e-9
+    y = Y.tape(y / pk * 0.8, 1.6) * pk * 0.75   # warm, not torn: saturate at a fixed level
     fade = 0.75 + 0.25 * np.sin(2 * np.pi * 0.9 * tt + r.uniform(0, 6))
     y *= fade
     echo.add(Y.pan(y, p), t + BAR, gain)
@@ -484,16 +485,18 @@ def vocals_part():
     fl = Y.secs(0.06)
     seg[:fl] *= np.linspace(0, 1, fl); seg[-fl:] *= np.linspace(1, 0, fl)
     y = Y.bp(seg, 450, 2800, 2)
-    y = Y.tape(y * 2.0, 2.0) * 0.5
+    pk = np.abs(y).max() + 1e-9
+    y = Y.tape(y / pk * 0.8, 1.6) * pk * 0.6
     echo.add(Y.pan(y, 0.2), S.FINAL_ECHO_T, 0.32)
     hall_send.add(Y.pan(y, 0.2), S.FINAL_ECHO_T, 0.5)
     VOCAL_SEGMENTS.append(dict(kind="final_echo", t=S.FINAL_ECHO_T, d=te - ts))
 
 
-def radio_chain(x, lo=320, hi=3100, drive=2.5, seed=0):
+def radio_chain(x, lo=320, hi=3100, drive=1.5, seed=0):
+    """A voice through a small AM receiver: band-limited and gently overdriven."""
     y = Y.bp(x, lo, hi, 2)
-    y = Y.tape(y * drive, drive) * 0.7
-    return y
+    pk = np.abs(y).max() + 1e-9
+    return Y.tape(y / pk * 0.9, drive) * pk * 0.9
 
 
 _digit_cache = {}
@@ -510,6 +513,8 @@ def say_digit(word, who):
         nz = np.where(np.abs(a) > 0.01)[0]
         a = a[max(nz[0] - 50, 0):nz[-1] + 200] if len(nz) else a
         a = resample_poly(a, 2, 1)
+        f = min(Y.secs(0.006), len(a) // 4)
+        a[:f] *= np.linspace(0, 1, f); a[-f:] *= np.linspace(1, 0, f)
         _digit_cache[key] = a
     return _digit_cache[key]
 
@@ -518,14 +523,14 @@ def numbers_part():
     for ev in S.SPOKEN:
         a = say_digit(ev["text"], ev["who"])
         if ev["who"] == "station":
-            y = radio_chain(a, 330, 3200, 2.2)
+            y = radio_chain(a, 330, 3200, 1.6)
             nums.add(y, ev["t"], 0.5, -0.1)
             hall_send.add(y, ev["t"], 0.12)
         else:
-            y = radio_chain(a, 250, 2400, 4.0)
+            y = radio_chain(a, 250, 2400, 2.6)
             tt = np.arange(len(y)) / SR
             y = y * (0.8 + 0.2 * np.sin(2 * np.pi * 9 * tt))
-            nums.add(y, ev["t"], 0.5, 0.3)
+            nums.add(y, ev["t"], 1.0, 0.3)
             hall_send.add(y, ev["t"], 0.3)
 
 
@@ -613,7 +618,7 @@ def master():
 
     db = lambda v: 10 ** (v / 20)
     TRIM = dict(drums=-3.5, bass=-4.0, pads=+6.5, strings=+8.0, guitar=+15.0, musicbox=0.0, theremin=0.0,
-                vocals=+1.0, echoes=+5.0, numbers=+4.0, radio=+5.0, plate=+7.0, hall=+12.0)
+                vocals=+1.0, echoes=+3.0, numbers=+10.0, radio=+5.0, plate=+7.0, hall=+12.0)
     stems = dict(drums=d, bass=bass.x, pads=pads.x, strings=strings.x, guitar=gtr.x, musicbox=box.x,
                  theremin=ther.x, vocals=vox, echoes=echo.x, numbers=nums.x, radio=radio.x,
                  plate=plate_wet, hall=hall_wet)

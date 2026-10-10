@@ -129,7 +129,7 @@ body.clip .lab#bl, body.clip .lab#br, body.clip #prog, body.clip #dialhint { dis
   <div class="lab" id="bl"><button id="pp" type="button" aria-label="Pause">Pause</button> &nbsp; <span id="clock">00:00</span> / <span id="dur">05:51</span></div>
   <div class="lab" id="br"><span id="sig">Signal ▮▮▮▮▮</span></div>
   <div id="prog" role="slider" aria-label="Position in the song" tabindex="0"><i></i></div>
-  <div id="dialhint">Drag to tune. The set finds its way back.</div>
+  <div id="dialhint">Drag to tune. Close to the station, the set finds its way back.</div>
   <div id="dial" tabindex="0" role="slider" aria-label="Tuning dial" aria-valuemin="0" aria-valuemax="30" aria-valuenow="9.927"></div>
 
   <div id="cliptitle" hidden><div class="eyebrow">Station 1927 · 9.927 MHz</div><h1>Long Delayed <em>Echoes</em></h1></div>
@@ -273,7 +273,39 @@ function buildAudio() {
   ns.connect(nf).connect(ng).connect(ac.destination);
   wh.connect(whg).connect(ac.destination);
   ns.start(); wh.start();
-  nodes = { dry, wet, ng, whg, wh, bp };
+  // other things on the band: a buzzer that never stops, and the call sign in Morse
+  const loop = (seconds, fill) => {
+    const b = ac.createBuffer(1, Math.round(ac.sampleRate * seconds), ac.sampleRate), d = b.getChannelData(0);
+    fill(d, ac.sampleRate);
+    const src = ac.createBufferSource(); src.buffer = b; src.loop = true;
+    const g = ac.createGain(); g.gain.value = 0;
+    src.connect(g).connect(ac.destination); src.start();
+    return g;
+  };
+  const buzz = loop(2.0, (d, sr) => {
+    for (let i = 0; i < d.length; i++) {
+      const t = i / sr; if (t > 0.9) break;
+      const ph = (t * 121) % 1, env = Math.min(1, t / 0.01, (0.9 - t) / 0.02);
+      d[i] = (ph < 0.3 ? 1 : -0.42) * 0.6 * env;
+    }
+  });
+  const MORSE = { "1": ".----", "9": "----.", "2": "..---", "7": "--..." };
+  const morse = loop(6.0, (d, sr) => {
+    const u = 0.075; let t = 0.3;
+    for (const ch of "1927") {
+      for (const sym of MORSE[ch]) {
+        const len = sym === "." ? u : 3 * u;
+        const a = Math.round(t * sr), z = Math.round((t + len) * sr);
+        for (let i = a; i < z && i < d.length; i++) {
+          const e = Math.min(1, (i - a) / (0.004 * sr), (z - i) / (0.004 * sr));
+          d[i] = Math.sin(2 * Math.PI * 660 * i / sr) * 0.5 * e;
+        }
+        t += len + u;
+      }
+      t += 2 * u;
+    }
+  });
+  nodes = { dry, wet, ng, whg, wh, bp, eggs: [[4.625, buzz], [7.927, morse]] };
 }
 function applyDetune(d, freq) {
   if (!nodes) return;
@@ -285,6 +317,10 @@ function applyDetune(d, freq) {
   nodes.whg.gain.setTargetAtTime(0.025 * Math.sin(Math.PI * clamp(off * 1.4, 0, 1)), t, k);
   nodes.wh.frequency.setTargetAtTime(400 + Math.abs(freq - STATION) * 9000 % 2600, t, 0.08);
   nodes.bp.frequency.setTargetAtTime(700 + 1400 * (1 - off), t, k);
+  for (const [f, g] of nodes.eggs) {
+    const near = Math.max(0, 1 - Math.abs(freq - f) / 0.06);
+    g.gain.setTargetAtTime(0.2 * near * near, t, k);
+  }
 }
 
 // ------------------------------------------------------------- layout
@@ -609,11 +645,11 @@ function tick() {
   const now = performance.now() / 1000;
   const dt = clamp(now - (lastPerf || now), 0.001, 0.1); lastPerf = now;
   // dial: the AFC pulls the set back to the station
-  if (!dragging && releaseAt >= 0 && now - releaseAt > 1.4) {
+  if (!dragging && releaseAt >= 0 && now - releaseAt > 1.4 && Math.abs(needle - STATION) < 0.5) {
     needle = lerp(needle, STATION, 1 - Math.exp(-dt * 1.6));
     if (Math.abs(needle - STATION) < 0.0005) { needle = STATION; releaseAt = -1; }
   }
-  applyDetune(detuneAmount(), needle);
+  applyDetune(detuneAmount(), shown);
   const t = started ? songTime() : 0;
   lastT = t;
   frame(t, dt);

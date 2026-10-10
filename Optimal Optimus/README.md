@@ -122,8 +122,9 @@ was three seconds ago.
 
 - **Tune in** starts the song. Headphones help.
 - **Drag the dial** along the bottom to drift off the station: the music sinks
-  into static and whistles and the figure breaks up. Let go and the set's AFC
-  pulls it back.
+  into static and whistles and the figure breaks up. Let go close to the
+  station and the set's AFC pulls it back. Drift further and you will find
+  other things on the band, for anyone who knows where to look.
 - **Space** pauses. **← / →** jump one bar (three seconds).
 - The clock in the corner is UTC, starting at 03:00:00, when the station
   broadcasts.
