@@ -181,7 +181,13 @@ def bridge(b):
     ]
 
 
-LINES = verse1(24) + chorus(40) + verse2(48) + chorus(64) + bridge(72) + chorus(88, final=True)
+def with_choir(lines, level):
+    for ln in lines:
+        ln["choir"] = level
+    return lines
+
+
+LINES = verse1(24) + chorus(40) + with_choir(verse2(48), 1) + chorus(64) + bridge(72) + chorus(88, final=True)
 
 # ---------------------------------------------------------------- the numbers
 NIGHT_TEXT = "THIS IS THE NIGHT BROADCAST. DO NOT ANSWER. JUST LISTEN."

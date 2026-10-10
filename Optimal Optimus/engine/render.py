@@ -412,7 +412,7 @@ def lde(sig_mono, t, gain, p, flutter_seed):
     tt = np.arange(n) / SR
     r = np.random.default_rng(flutter_seed)
     # flutter: tiny time-warp
-    warp = tt + 0.0025 * np.sin(2 * np.pi * 0.7 * tt + r.uniform(0, 6)) + 0.001 * np.sin(2 * np.pi * 6.1 * tt)
+    warp = tt + 0.0012 * np.sin(2 * np.pi * 0.7 * tt + r.uniform(0, 6)) + 0.00012 * np.sin(2 * np.pi * 5.3 * tt)
     y = np.interp(warp * SR, np.arange(n), sig_mono)
     y = Y.bp(y, 380, 3200, 2)
     y = Y.tape(y * 2.2, 2.0) * 0.6

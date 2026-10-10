@@ -234,7 +234,7 @@ def sing(text, notes, voices=None, rate=165, voice="en", seed=1):
             if not E[i].any():
                 continue
             v = voi[i]
-            seg = (v * pulse[s0:s0 + N] + (1 - v) * 0.9 * noise[s0:s0 + N]) * win
+            seg = (v * pulse[s0:s0 + N] + ((1 - v) * 0.9 + 0.07 * v) * noise[s0:s0 + N]) * win  # a little breath
             Y = np.fft.rfft(seg, NFFT) * E[i]
             y[s0:s0 + NFFT] += np.fft.irfft(Y, NFFT)
         y /= 2.0 * (HOP / (N / 2))  # hann OLA gain at this hop
