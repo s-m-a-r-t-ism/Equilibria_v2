@@ -1,6 +1,0 @@
-numpy
-scipy
-soundfile
-numba
-pyloudnorm
-espeakng-loader
