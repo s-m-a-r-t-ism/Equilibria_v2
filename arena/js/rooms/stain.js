@@ -574,6 +574,7 @@ export function create(shell) {
 
   let hinted = false;
   return {
+    _S: S,
     resize, frame: frame_, fresh, hang,
     enter() { S.active = true; initSound(); if (!hinted) { hinted = true; shell.hint('Hold to pour. Use the tilt pad, or WASD, to lift an edge.<small>Oil leaves a halo · acrylic does not · Space lays it flat</small>', 7000); } },
     leave() { S.active = false; S.pouring = false; S.keys.clear(); },

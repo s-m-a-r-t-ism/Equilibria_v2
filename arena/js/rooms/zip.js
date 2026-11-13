@@ -468,6 +468,7 @@ export function create(shell) {
 
   let hinted = false;
   return {
+    _S: S,
     resize, frame, fresh, hang,
     enter() { S.active = true; initSound(); notes.hidden = false; if (!hinted) { hinted = true; shell.hint('The whole field sounds a low A. Every zip is a bridge on the string.<small>Click to lay a zip · drag to tune · hover to listen · Shift places freely</small>', 7000); } },
     leave() { S.active = false; },

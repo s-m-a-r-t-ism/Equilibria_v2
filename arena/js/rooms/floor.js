@@ -1067,6 +1067,7 @@ export function create(shell) {
 
   let hinted = false;
   return {
+    _S: S,
     resize, frame, fresh, hang,
     enter() {
       S.active = true;

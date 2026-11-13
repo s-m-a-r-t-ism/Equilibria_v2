@@ -277,6 +277,23 @@ export function create(shell) {
 
   /* ---------- choosing the detail on the wall ---------- */
   let wdrag = null;
+  const wpts = new Map();
+  let pinch = null;
+  wall.addEventListener('pointerdown', (e) => {
+    wpts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (wpts.size === 2) { const [a, b] = [...wpts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), w: S.crop.w }; wdrag = null; }
+  });
+  wall.addEventListener('pointermove', (e) => {
+    if (!wpts.has(e.pointerId)) return;
+    wpts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && wpts.size === 2) {
+      const [a, b] = [...wpts.values()];
+      S.crop.w = Math.max(0.18, Math.min(1, pinch.w * pinch.d / Math.max(10, Math.hypot(a[0] - b[0], a[1] - b[1]))));
+      redrawPage();
+    }
+  });
+  const wend = (e) => { wpts.delete(e.pointerId); if (wpts.size < 2) pinch = null; };
+  wall.addEventListener('pointerup', wend); wall.addEventListener('pointercancel', wend);
   wall.addEventListener('wheel', (e) => {
     e.preventDefault();
     S.crop.w = Math.max(0.18, Math.min(1, S.crop.w * (e.deltaY > 0 ? 1.06 : 0.94)));
@@ -290,7 +307,7 @@ export function create(shell) {
     wall.style.cursor = 'grabbing';
   });
   wall.addEventListener('pointermove', (e) => {
-    if (!wdrag || !S.layout) return;
+    if (!wdrag || !S.layout || pinch) return;
     const L = S.layout.proj;
     const k = S.crop.w / (L.w); // page units per css px
     S.crop.cx = wdrag.cx - (e.clientX - wdrag.x) * k;
@@ -560,6 +577,7 @@ export function create(shell) {
   // the directory is set in Newsreader; once the font has arrived, set a fresh page in it
   try { document.fonts && document.fonts.load('12px "Newsreader"').then(() => { if (!S.strokes.length && !S.cur) newPage(); }); } catch {}
   return {
+    _S: S,
     resize, frame, hang,
     fresh() { newPage(); shell.toast('A new page, torn from the directory.'); },
     enter() { S.active = true; initSound(); if (!hinted) { hinted = true; shell.hint('Sketch on the phone-book page with the brush.<br>The projector throws it on the wall.<small>Wheel or drag on the wall to pick a detail · Paint it when you like it</small>', 7500); } },

@@ -46,7 +46,7 @@ const KEYS = [
   { y: 1956, g: '#2c4a63', f: ['#6c8b85', '#262b52', '#c3ad66'] },
   { y: 1958, g: '#3a0f13', f: ['#6e1a1d', '#260808', '#8c2b1f'] },
   { y: 1964, g: '#29151e', f: ['#1c1013', '#3a1f28', '#24131a'] },
-  { y: 1969, g: '#e9e6df', f: ['#141212', '#141212', '#8a8784'] },
+  { y: 1969, g: '#8c8986', f: ['#141212', '#141212', '#8a8784'] },
 ];
 const DURATION = 380; // seconds from 1949 to 1969
 
@@ -418,6 +418,14 @@ export function create(shell) {
     S.sway[0] += (S.swayT[0] - S.sway[0]) * Math.min(1, dt * 1.5);
     S.sway[1] += (S.swayT[1] - S.sway[1]) * Math.min(1, dt * 1.5);
     S.closest = Math.max(S.closest, S.dist);
+    // the last paintings impose their own layout: black above, grey below, nothing between
+    const yrNow = yearNow();
+    if (yrNow > 1966 && !S.drag) {
+      const k = Math.min(1, dt * 0.25 * Math.min(1, (yrNow - 1966) / 2));
+      const T = [[0.02, 0.02, 0.98, 0.6], [0.02, 0.2, 0.98, 0.6], [0.02, 0.6, 0.98, 0.98]];
+      S.rects.forEach((r, i) => { for (let j = 0; j < 4; j++) r[j] += (T[i][j] - r[j]) * k; });
+      S.cacheDirty = true;
+    }
     // glazes slowly sink in
     for (let i = 0; i < 3; i++) S.glazeAmt[i] *= Math.pow(0.995, dt);
     const breath = Math.sin(S.time * Math.PI * 2 / 10); // six breaths a minute
@@ -478,6 +486,7 @@ export function create(shell) {
 
   let hinted = false;
   return {
+    _S: S,
     resize, frame, fresh, hang,
     enter() { S.active = true; initSound(); if (!hinted) { hinted = true; shell.hint('Walk closer with the wheel or the slider.<br>Rothko is often quoted asking for eighteen inches.<small>Drag an edge to reshape a field · click a field to glaze it</small>', 7000); } },
     leave() { S.active = false; },

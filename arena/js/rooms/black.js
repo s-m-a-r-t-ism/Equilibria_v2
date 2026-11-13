@@ -82,12 +82,15 @@ void main(){
   }
   // dark adaptation: gain rises, and the Purkinje shift moves sensitivity toward blue-green
   float a = uAdapt;
-  vec3 purk = mix(vec3(1.0), vec3(0.72, 1.08, 1.25), a);
-  float gain = mix(1.0, 16.0, a * a * (3.0 - 2.0 * a));
+  vec3 purk = mix(vec3(1.0), vec3(0.86, 1.0, 1.1), a);
+  float gain = mix(1.0, 5.5, a * a * (3.0 - 2.0 * a));
   vec3 seen = c * purk * gain;
   // contrast stretch around the mean level of the painting
   float mean = 0.0044 * gain;
-  seen = mean + (seen - vec3(mean)) * mix(1.0, 3.6, a);
+  seen = mean + (seen - vec3(mean)) * mix(1.0, 3.2, a);
+  // dark-adapted vision is poor at colour: let some of it drain away
+  float lum = dot(seen, vec3(0.3, 0.55, 0.15));
+  seen = mix(seen, vec3(lum), 0.25 * a);
   // eigengrau: the eye's own grain, rising in the dark
   float g = (hash12(sp * 0.5 + floor(uTime * 24.0) * 13.7) - 0.5);
   float g2 = (vnoise(sp * 0.08 + uTime * 0.7) - 0.5);
@@ -227,6 +230,7 @@ export function create(shell) {
   }
 
   return {
+    _S: S,
     resize, frame, fresh, hang,
     enter() {
       S.active = true; S.still = 0; S.adapt = 0; initSound();
