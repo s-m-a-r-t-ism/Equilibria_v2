@@ -13,7 +13,7 @@ const RULES = [
 
 export const meta = {
   id: 'black',
-  numeral: 'V',
+  numeral: 'VI',
   name: 'Black',
   after: 'After Ad Reinhardt',
   place: 'A dark room',
@@ -34,7 +34,7 @@ export const meta = {
     <p>It imitates dark adaptation. As you stay still the contrast of the picture slowly rises and its colours shift the way vision shifts in low light: reds fade, blues and greens hold on longer. That shift is named after Jan Evangelista Purkyně, who noticed red flowers turning dark before their leaves at dusk. In very low light vision is also grainy; the grain here is not a fault.</p>
     <p>There is no sound. After a while you may hear the two that John Cage said he heard in an anechoic chamber at Harvard in 1951: one high, one low.</p>
     <h3>Controls</h3>
-    <dl><dt>Nothing</dt><dd>keep still</dd></dl>
+    <dl><dt>Nothing</dt><dd>keep still</dd><dt>H</dt><dd>hang what you see, without moving</dd></dl>
     <p class="src">Sources: Reinhardt, “Twelve Rules for a New Academy”, ARTnews (May 1957); Barbara Rose (ed.), Art as Art: The Selected Writings of Ad Reinhardt (1975); Cage, Silence (1961).</p>
   `,
 };
@@ -114,6 +114,7 @@ export function create(shell) {
   const S = { w: 1, h: 1, dpr: 1, rect: [0, 0, 1, 1], adapt: 0, still: 0, best: 0, ruleIdx: 10, time: 0, active: false, last: [0, 0], seed: Math.random() * 10, moves: 0 };
 
   function moved() {
+    if (S.still > 3) S.snap = { still: S.still, adapt: S.adapt, at: performance.now() };
     if (S.still > 3) {
       S.ruleIdx = (S.ruleIdx + 1) % RULES.length;
       rule.textContent = `${S.ruleIdx + 1}. ${RULES[S.ruleIdx]}`;
@@ -200,7 +201,8 @@ export function create(shell) {
     const OW = 900;
     const t = texture(gl, OW, OW, {});
     const fb = framebuffer(gl, t);
-    const a = Math.max(S.adapt, 0.0);
+    const snap = S.snap && performance.now() - S.snap.at < 12000 && S.snap.adapt > S.adapt ? S.snap : { still: S.still, adapt: S.adapt };
+    const a = snap.adapt;
     target(gl, fb);
     use(gl, prog, { uScreen: [OW, OW], uRect: [0, 0, OW, OW], uAdapt: a, uTime: S.time, uFrameOnly: 1, uSeed: S.seed });
     Q.draw();
@@ -215,11 +217,11 @@ export function create(shell) {
         medium: 'Oil on canvas, the oil drained out',
         dims: '152.4 × 152.4 cm',
         facts: [
-          `Hung as seen after ${fmtTime(S.still)} of stillness`,
+          `Hung as seen after ${fmtTime(snap.still)} of stillness`,
           `Longest stillness in the room: ${fmtTime(S.best)}`,
           S.moves ? `Rules shown: ${S.moves}` : 'No rule was broken',
         ],
-        review: { who: 'A visitor who walked past in four seconds, imagined', text: S.adapt > 0.6 ? 'There was a cross in it. I would not have believed it.' : 'It is a black square. I do not know what else to tell you.' },
+        review: { who: 'A visitor who walked past in four seconds, imagined', text: a > 0.6 ? 'There was a cross in it. I would not have believed it.' : 'It is a black square. I do not know what else to tell you.' },
       },
     };
   }

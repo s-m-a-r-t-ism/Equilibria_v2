@@ -8,7 +8,7 @@ import { zipTitle, zipReview, year, ARTIST } from '../labels.js';
 
 export const meta = {
   id: 'zip',
-  numeral: 'IV',
+  numeral: 'V',
   name: 'Zip',
   after: 'After Barnett Newman',
   place: 'Betty Parsons Gallery, East 57th Street',

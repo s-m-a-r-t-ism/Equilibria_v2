@@ -8,7 +8,7 @@ import { fieldTitle, fieldReview, year, fmtTime, ARTIST, colorName } from '../la
 
 export const meta = {
   id: 'field',
-  numeral: 'III',
+  numeral: 'IV',
   name: 'Field',
   after: 'After Mark Rothko',
   place: 'A dim room',

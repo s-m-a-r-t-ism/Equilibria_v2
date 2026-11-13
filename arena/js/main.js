@@ -1,11 +1,12 @@
 import { resume, setMuted, isMuted, bus } from './audio.js';
 import * as Floor from './rooms/floor.js';
+import * as Opticon from './rooms/opticon.js';
 import * as Stain from './rooms/stain.js';
 import * as Field from './rooms/field.js';
 import * as Zip from './rooms/zip.js';
 import * as Black from './rooms/black.js';
 
-const ROOMS = [Floor, Stain, Field, Zip, Black];
+const ROOMS = [Floor, Opticon, Stain, Field, Zip, Black];
 const byId = Object.fromEntries(ROOMS.map((r) => [r.meta.id, r]));
 
 const $ = (s, el = document) => el.querySelector(s);

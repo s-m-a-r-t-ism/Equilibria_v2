@@ -9,7 +9,7 @@ import { stainTitle, stainReview, year, fmtTime, ARTIST } from '../labels.js';
 
 export const meta = {
   id: 'stain',
-  numeral: 'II',
+  numeral: 'III',
   name: 'Stain',
   after: 'After Helen Frankenthaler and Morris Louis',
   place: 'A studio on West 23rd Street',
