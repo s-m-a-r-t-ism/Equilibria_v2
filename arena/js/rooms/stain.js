@@ -62,9 +62,9 @@ in vec2 vUv; uniform vec2 uRes; uniform float uSeed; out vec4 o;
 ${GLSL_NOISE}
 void main(){
   vec2 c = vUv * uRes + uSeed;
-  float bump = vnoise(c * 0.7) * 0.45 + fbm3(c * 0.06) * 0.55;
-  float sizing = fbm(c * 0.025) ;
-  float absorb = 0.55 + 0.9 * smoothstep(0.2, 0.8, sizing) * (0.7 + 0.3 * vnoise(c * 0.5));
+  float bump = vnoise(c * 0.22) * 0.3 + fbm3(c * 0.045) * 0.7;
+  float sizing = fbm(c * 0.018) ;
+  float absorb = 0.6 + 0.8 * smoothstep(0.2, 0.8, sizing) * (0.85 + 0.15 * vnoise(c * 0.18));
   float thread = vnoise(vec2(c.x * 0.15, c.y * 3.0)) * 0.5 + vnoise(vec2(c.x * 3.0, c.y * 0.15)) * 0.5;
   o = vec4(bump, absorb, thread, 1.0);
 }`;
@@ -93,7 +93,7 @@ void main(){
   float hu = Hn(ic + ivec2( 0,-1), size, H, e2);
   float hd = Hn(ic + ivec2( 0, 1), size, H, e3);
   // thin films are held back by the cloth; viscous paint more so
-  float damp = clamp(h / (h + 0.035 * uVisc), 0.0, 0.985);
+  float damp = clamp(h / (h + 0.012 * uVisc), 0.0, 0.985);
   f *= damp;
   f.x += uK * ((H - hl) - uGrav.x);
   f.y += uK * ((H - hr) + uGrav.x);
@@ -222,7 +222,7 @@ void main(){
   float weft = vnoise(vec2(w.x * 0.8, w.y * 30.0));
   float fine = sin(w.x * 6.2831 * 9.0) * sin(w.y * 6.2831 * 9.0);
   float slub = smoothstep(0.75, 0.95, vnoise(vec2(w.x * 0.3, w.y * 7.0))) * 0.5 + smoothstep(0.78, 0.97, vnoise(vec2(w.x * 7.0, w.y * 0.3))) * 0.5;
-  vec3 base = vec3(0.86, 0.82, 0.73);
+  vec3 base = vec3(0.88, 0.85, 0.77);
   float tex = 0.04 * warp + 0.04 * weft + 0.02 * fine + 0.035 * slub;
   base *= 0.94 + tex;
   base = mix(base, base * vec3(0.98, 0.96, 0.92), fbm3(w * 0.02));
@@ -242,14 +242,14 @@ void main(){
   col *= 1.0 - 0.16 * smoothstep(0.0, 0.6, sat);
   // standing liquid: a meniscus sheen
   float h = st.x;
-  vec2 e = 1.0 / uRes;
+  vec2 e = 1.6 / uRes;
   float hx = samp(uState, uv + vec2(e.x, 0.0)).x - samp(uState, uv - vec2(e.x, 0.0)).x;
   float hy = samp(uState, uv + vec2(0.0, e.y)).x - samp(uState, uv - vec2(0.0, e.y)).x;
-  vec3 n = normalize(vec3(-hx * 14.0, -hy * 14.0, 1.0));
+  vec3 n = normalize(vec3(-hx * 6.0, -hy * 6.0, 1.0));
   vec3 L = normalize(vec3(uLight, 0.8));
   vec3 Hh = normalize(L + vec3(0.0, 0.0, 1.0));
   float wetMask = smoothstep(0.0005, 0.02, h);
-  float spec = pow(max(dot(n, Hh), 0.0), 90.0) * wetMask * 1.2;
+  float spec = pow(max(dot(n, Hh), 0.0), 40.0) * wetMask * 0.55;
   col = col * (1.0 - 0.1 * wetMask) + spec * vec3(1.0, 0.98, 0.94);
   col *= 1.0 + 0.25 * (dot(n, L) - L.z) * wetMask;
   // light falloff and grain
@@ -339,7 +339,7 @@ export function create(shell) {
       target(gl, sw);
       use(gl, pUpd, {
         uState: sr.tex[0], uPig: sr.tex[1], uDep: sr.tex[2], uFlux: fw.tex[0], uPaper: paper,
-        uPour: [S.pos[0], S.pos[1], 2.4 / cellCm * 1.5, pourAmt],
+        uPour: [S.pos[0], S.pos[1], 4.0 / cellCm, pourAmt],
         uPourAbs: absorb,
         uSponge: [S.pos[0], S.pos[1], 7 / cellCm, sponge],
         uAbsorb: mp.absorb, uSatCap: mp.satCap, uEvap: 0.0000045, uDry: mp.dry, uWick: mp.wick,

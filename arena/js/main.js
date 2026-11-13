@@ -99,10 +99,10 @@ function buildShell(R) {
         </div>
         <div class="acts">
           <button class="hbtn primary" data-act="hang" type="button" title="Hang this picture in your exhibition (H)">Hang</button>
-          <button class="hbtn" data-act="fresh" type="button" title="Start a new canvas (N)">${m.freshLabel || 'New canvas'}</button>
-          <button class="hbtn" data-act="wall" type="button" title="Read the wall text (I)">Wall text</button>
+          <button class="hbtn" data-act="fresh" type="button" title="Start a new canvas (N)"><span class="long">${m.freshLabel || 'New canvas'}</span><span class="short">New</span></button>
+          <button class="hbtn" data-act="wall" type="button" title="Read the wall text (I)"><span class="long">Wall text</span><span class="short">Text</span></button>
           <button class="hbtn" data-act="mute" type="button" aria-pressed="false" title="Sound on or off (M)">Sound</button>
-          <button class="hbtn" data-act="leave" type="button" title="Back to the rooms (Esc)">Rooms</button>
+          <button class="hbtn" data-act="leave" type="button" title="Back to the rooms (Esc)"><span class="long">Rooms</span><span class="short">✕</span></button>
         </div>
       </div>
       <div class="readout"></div>
@@ -168,7 +168,7 @@ function act(a) {
 function syncMute() {
   document.querySelectorAll('[data-act="mute"]').forEach((b) => {
     b.setAttribute('aria-pressed', isMuted() ? 'true' : 'false');
-    b.textContent = isMuted() ? 'Muted' : 'Sound';
+    b.innerHTML = isMuted() ? 'Muted' : 'Sound';
   });
 }
 

@@ -135,6 +135,7 @@ button { font: inherit; color: inherit; }
 .hbtn.primary { border-color: var(--hud-cad); color: #fff; background: rgba(160, 40, 22, 0.8); }
 .hbtn.primary:hover { background: rgba(190, 52, 30, 0.95); }
 .hbtn:focus-visible { outline: 2px solid var(--hud-cad); outline-offset: 2px; }
+.hbtn .short { display: none; }
 .hbtn[aria-pressed="true"] { background: var(--hud-fg); color: #111; border-color: var(--hud-fg); }
 
 .toolbar {
@@ -164,8 +165,9 @@ button { font: inherit; color: inherit; }
   font-family: var(--mono); font-size: 11px; color: var(--hud-dim); letter-spacing: 0.04em; text-align: right; display: grid; gap: 4px; pointer-events: none; transition: opacity .8s; }
 .readout b { color: var(--hud-fg); font-weight: 500; font-variant-numeric: tabular-nums; }
 .hint { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;
-  font-family: var(--serif); font-style: italic; font-size: clamp(17px, 2vw, 23px); color: var(--hud-fg); text-shadow: 0 1px 12px rgba(0,0,0,.8);
-  transition: opacity 1.4s; max-width: 30em; padding: 0 16px; line-height: 1.4; }
+  font-family: var(--serif); font-style: italic; font-size: clamp(17px, 2vw, 22px); color: var(--hud-fg);
+  background: rgba(12, 10, 9, 0.66); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  transition: opacity 1.4s; width: max-content; max-width: min(30em, calc(100% - 32px)); padding: 18px 22px; line-height: 1.4; opacity: 0; }
 .hint small { display: block; font-family: var(--mono); font-style: normal; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hud-dim); margin-top: 10px; }
 
 /* wall text drawer */
@@ -208,8 +210,8 @@ button { font: inherit; color: inherit; }
 #catalogue .intro { font-family: var(--serif); font-size: 17px; line-height: 1.5; max-width: 40em; margin: 12px 0 0; color: var(--muted); }
 .works { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 44px 32px; }
 .work { display: grid; gap: 14px; align-content: start; min-width: 0; }
-.work .frame { background: #0c0b0b; padding: clamp(10px, 3%, 22px); display: grid; place-items: center; aspect-ratio: 4 / 3; max-width: 100%; }
-.work img { max-height: 100%; max-width: 100%; display: block; box-shadow: 0 6px 18px rgba(0,0,0,.5); }
+.work .frame { background: #0c0b0b; position: relative; aspect-ratio: 4 / 3; width: 100%; max-width: 100%; overflow: hidden; }
+.work img { position: absolute; left: 7%; top: 7%; width: 86%; height: 86%; max-width: none; object-fit: contain; display: block; filter: drop-shadow(0 6px 14px rgba(0,0,0,.6)); }
 .label { font-family: var(--serif); font-size: 15px; line-height: 1.45; display: grid; gap: 2px; }
 .label .artist { font-family: var(--display); font-weight: 700; font-size: 14px; }
 .label .title { font-style: italic; font-size: 18px; }
@@ -228,7 +230,10 @@ button { font: inherit; color: inherit; }
 @media (max-width: 640px) {
   .plaque .t { font-size: 17px; }
   .plaque .s { display: none; }
-  .hbtn { padding: 7px 8px; font-size: 10.5px; }
+  .hbtn { padding: 7px 7px; font-size: 10px; letter-spacing: 0.03em; }
+  .hbtn .long { display: none; }
+  .hbtn .short { display: inline; }
+  .acts { gap: 4px; }
   .readout { top: calc(env(safe-area-inset-top, 0px) + 100px); }
   .toolbar { gap: 8px 10px; padding: 8px 10px; }
   .toolbar input[type=range] { width: 80px; }

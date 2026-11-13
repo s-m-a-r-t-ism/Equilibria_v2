@@ -5,6 +5,7 @@ const pick = (arr, r = Math.random()) => arr[Math.floor(r * arr.length) % arr.le
 export function year() { return String(new Date().getFullYear()); }
 
 export function fmtTime(s) {
+  if (s < 0.5) return 'less than a second';
   s = Math.round(s);
   const m = Math.floor(s / 60), r = s % 60;
   return m ? `${m} min ${r} s` : `${r} s`;

@@ -33,6 +33,7 @@ export const meta = {
       <dt>Can, or 1 to 7</dt><dd>dip into a colour and reload</dd>
       <dt>Wheel, ↑ ↓</dt><dd>stick height above the canvas</dd>
       <dt>T</dt><dd>change tool</dd>
+      <dt>Ghost, or G</dt><dd>let an unseen painter work: a random walk of mostly short steps and the odd long leap (a Lévy flight)</dd>
       <dt>New canvas</dt><dd>a fresh canvas; the floor keeps everything</dd>
     </dl>
     <p class="src">Sources: Pollock, “My Painting” (1947); Greenberg, “American-Type Painting” (1955); Taylor, Micolich and Jonas, Nature 399 (1999); Jones-Smith and Mathur, Nature 444 (2006); Herczyński, Cernuschi and Mahadevan, Physics Today (2011); Palacios et al., PLOS ONE (2019).</p>
@@ -637,6 +638,7 @@ export function create(shell) {
       ${Object.entries(TOOLS).map(([k, t]) => `<button class="seg" type="button" data-tool="${k}" aria-pressed="${k === 'stick'}">${t.label}</button>`).join('')}
     </div>
     <div class="grp"><label class="lbl" for="floor-h">Height</label><input id="floor-h" type="range" min="6" max="120" value="45"><output id="floor-ho">45 cm</output></div>
+    <div class="grp"><button class="seg" type="button" id="floor-ghost" aria-pressed="false" title="Let an unseen painter work (G)">Ghost</button></div>
     <div class="grp"><span class="lbl">Load</span><span id="floor-load" style="display:inline-block;width:64px;height:6px;border:1px solid rgba(236,230,218,.4);position:relative"><span style="position:absolute;inset:0;transform-origin:left;background:#ece6da"></span></span></div>
   `;
   shell.readout.innerHTML = `
@@ -666,6 +668,68 @@ export function create(shell) {
     const t = e.target.closest('[data-tool]'); if (t) chooseTool(t.dataset.tool);
   });
   hIn.addEventListener('input', () => setHeight(+hIn.value));
+  const ghostBtn = $('#floor-ghost');
+  ghostBtn.addEventListener('click', () => toggleGhost());
+
+  /* ---------- the ghost: a painter you cannot see, walking a Lévy flight ---------- */
+  const GH = { on: false, wp: null, speed: 200, pause: 0, heightT: 45, hold: 0 };
+  function toggleGhost(v) {
+    GH.on = v ?? !GH.on;
+    ghostBtn.setAttribute('aria-pressed', String(GH.on));
+    if (GH.on) { initSound(); shell.hideHint(); shell.toast('The ghost is painting. Take the stick back at any time.'); GH.wp = null; S.over = true; }
+    else { S.pouring = false; S.stream++; }
+  }
+  function levyStep() {
+    // step lengths from a power law: mostly short, now and then a long leap
+    const u = Math.random();
+    const L = Math.min(140, 6 * Math.pow(1 - u, -1 / 1.4));
+    const a = Math.random() * Math.PI * 2;
+    let x = S.pos[0] + Math.cos(a) * L, y = S.pos[1] + Math.sin(a) * L;
+    // keep mostly over the canvas, sometimes over the edge onto the floor
+    const m = Math.random() < 0.9 ? 6 : -14;
+    x = Math.max(CANVAS.x0 + m, Math.min(CANVAS.x1 - m, x));
+    y = Math.max(CANVAS.y0 + m, Math.min(CANVAS.y1 - m, y));
+    return [x, y];
+  }
+  function ghost(dt) {
+    if (GH.pause > 0) { GH.pause -= dt; return; }
+    if (!GH.wp) {
+      GH.wp = levyStep();
+      GH.speed = 90 + Math.random() * Math.random() * 520;
+      GH.curve = (Math.random() - 0.5) * 2.2;
+      GH.start = [...S.target];
+      GH.t = 0;
+      GH.dur = Math.max(0.12, Math.hypot(GH.wp[0] - S.target[0], GH.wp[1] - S.target[1]) / GH.speed);
+      if (Math.random() < 0.18) GH.heightT = 15 + Math.random() * 75;
+    }
+    GH.t += dt / GH.dur;
+    const t = Math.min(1, GH.t);
+    // a curved stroke: quadratic bezier bending to one side
+    const sx = GH.start[0], sy = GH.start[1], ex = GH.wp[0], ey = GH.wp[1];
+    const mx = (sx + ex) / 2 - (ey - sy) * GH.curve * 0.5, my = (sy + ey) / 2 + (ex - sx) * GH.curve * 0.5;
+    const e = t;
+    S.target = [(1 - e) * (1 - e) * sx + 2 * (1 - e) * e * mx + e * e * ex, (1 - e) * (1 - e) * sy + 2 * (1 - e) * e * my + e * e * ey];
+    setHeight(S.height + (GH.heightT - S.height) * Math.min(1, dt * 1.5));
+    const wasPouring = S.pouring;
+    S.pouring = S.load > 0.04 && GH.pause <= 0;
+    if (S.pouring && !wasPouring) { S.stream++; S.lastLand = null; }
+    if (t >= 1) {
+      GH.wp = null;
+      // a sharp stop now and then throws paint
+      if (Math.random() < 0.12) { S.vel[0] *= 1.6; S.vel[1] *= 1.6; }
+      if (Math.random() < 0.06) GH.pause = 0.3 + Math.random() * 0.8;
+    }
+    if (S.load < 0.2 || (t >= 1 && Math.random() < 0.05)) {
+      // back to the cans
+      const weights = [5, 2, 3, 1.4, 0.8, 0.8, 1.5];
+      let r = Math.random() * weights.reduce((a, b) => a + b, 0), i = 0;
+      while (r > weights[i]) { r -= weights[i]; i++; }
+      choosePaint(i);
+      if (Math.random() < 0.2) chooseTool(['stick', 'stick', 'stick', 'baster', 'can'][Math.floor(Math.random() * 5)]);
+      GH.pause = 0.4;
+      S.pouring = false;
+    }
+  }
 
   function toWorld(e) {
     const r = cv.getBoundingClientRect();
@@ -675,6 +739,7 @@ export function create(shell) {
   let ptrId = null;
   cv.addEventListener('pointerdown', (e) => {
     initSound();
+    if (GH.on) toggleGhost(false);
     ptrId = e.pointerId;
     try { cv.setPointerCapture(e.pointerId); } catch {}
     const w = toWorld(e);
@@ -686,6 +751,7 @@ export function create(shell) {
   cv.addEventListener('pointermove', (e) => {
     const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
     const last = evs[evs.length - 1] || e;
+    if (GH.on) return;
     S.target = toWorld(last); S.over = true;
   });
   const up = (e) => {
@@ -709,6 +775,7 @@ export function create(shell) {
     if (i >= 0) { initSound(); choosePaint(i); }
     if (e.key === 'ArrowUp') { setHeight(S.height + 4); e.preventDefault(); }
     if (e.key === 'ArrowDown') { setHeight(S.height - 4); e.preventDefault(); }
+    if (e.key === 'g' || e.key === 'G') toggleGhost();
     if (e.key === 't' || e.key === 'T') { const ks = Object.keys(TOOLS); chooseTool(ks[(ks.indexOf(S.tool) + 1) % ks.length]); }
   };
   window.addEventListener('keydown', onKey);
@@ -833,7 +900,8 @@ export function create(shell) {
     S.w = Math.round(w * dpr); S.h = Math.round(h * dpr);
     cv.width = S.w; cv.height = S.h;
     // fit the canvas plus a margin of floor
-    const mx = 26, my = 22;
+    const portrait = S.h > S.w * 1.1;
+    const mx = portrait ? 3 : 26, my = portrait ? 10 : 22;
     const cw = CANVAS.x1 - CANVAS.x0 + mx * 2, ch = CANVAS.y1 - CANVAS.y0 + my * 2;
     const topPad = 70 * dpr, botPad = 74 * dpr;
     S.scale = Math.min(S.w / cw, (S.h - topPad - botPad) / ch);
@@ -842,6 +910,7 @@ export function create(shell) {
   }
 
   function frame(dt) {
+    if (GH.on) ghost(dt);
     const sub = 10;
     for (let i = 0; i < sub; i++) step(dt / sub);
     updateSound(dt);
@@ -913,7 +982,7 @@ export function create(shell) {
       initSound();
       if (!hinted) { hinted = true; shell.hint('Hold to pour. Move fast for straight lines, slowly for loops.<br>Swing and let go to throw.<small>Pick a can to reload · wheel for stick height · wall text for the physics</small>', 7000); }
     },
-    leave() { S.active = false; S.pouring = false; },
+    leave() { S.active = false; S.pouring = false; if (GH.on) toggleGhost(false); },
   };
 }
 
