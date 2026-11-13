@@ -113,7 +113,7 @@ function makePage(W, H) {
     let name = e.name;
     const sur = name.split(' ')[0];
     // repeated surnames are replaced by a dash, as directories did
-    if (sur === lastSurname) name = '—' + name.slice(sur.length);
+    if (sur === lastSurname) name = '–' + name.slice(sur.length);
     else { x.font = `700 ${fs}px "Newsreader", Georgia, serif`; }
     lastSurname = sur;
     const numW = x.measureText(e.num).width;

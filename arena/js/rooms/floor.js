@@ -438,7 +438,7 @@ export function create(shell) {
     stamp0: performance.now() / 1000,
     D: null, coverage: 0, dTimer: 0, lastDT: 0, dirty: false,
     stats: null,
-    active: false,
+    active: false, pourEnd: -10,
   };
   function freshStats() { return { thread: 0, drops: 0, flicks: 0, pourTime: 0, coilSum: 0, vol: {}, started: S.clock }; }
   S.stats = freshStats();
@@ -511,7 +511,7 @@ export function create(shell) {
 
     // inertial shedding: a sharp deceleration flings paint off the end
     const accAlong = speed > 1 ? (S.acc[0] * S.vel[0] + S.acc[1] * S.vel[1]) / speed : 0;
-    if (S.tool !== 'can' && S.load > 0.05 && S.flickCool <= 0 && speed > 110 && -accAlong > 5200) {
+    if ((S.pouring || S.clock - S.pourEnd < 0.3) && S.tool !== 'can' && S.load > 0.05 && S.flickCool <= 0 && speed > 110 && -accAlong > 5200) {
       fling(Math.min(1, (-accAlong - 5200) / 9000), S.vel[0], S.vel[1]);
       S.flickCool = 0.16;
     }
@@ -834,7 +834,7 @@ export function create(shell) {
       const sp = Math.hypot(S.vel[0], S.vel[1]);
       if (sp > 160 && S.tool !== 'can' && S.load > 0.05) fling(Math.min(1, sp / 600), S.vel[0], S.vel[1]);
     }
-    S.pouring = false; S.stream++; S.lastLand = null;
+    S.pouring = false; S.pourEnd = S.clock; S.stream++; S.lastLand = null;
     shell.setIdle(false);
     if (e.pointerType !== 'mouse') S.over = false;
   };
