@@ -139,6 +139,7 @@ uniform float uScale, uNow, uPpc, uGrain;
 uniform vec4 uCanvas;
 uniform vec3 uStick; // x, y, height (cm)
 uniform float uShowStick; uniform vec2 uStickDir;
+uniform int uBgMode; uniform sampler2D uBg;
 out vec4 o;
 ${GLSL_NOISE}
 
@@ -192,7 +193,8 @@ void main(){
 
   vec3 L = normalize(vec3(-0.55, -0.7, 0.75));
   vec3 base;
-  if (onCanvas) base = duck(w);
+  if (uBgMode == 1) base = texelFetch(uBg, ivec2(gl_FragCoord.xy), 0).rgb;
+  else if (onCanvas) base = duck(w);
   else {
     base = floorBoards(w);
     // the canvas casts a slight shadow on the floor (it has thickness and a few wrinkles)
@@ -265,6 +267,76 @@ void main(){
   o = vec4(pow(max(col, 0.0), vec3(1.0)), 1.0);
 }`;
 
+const BG_FS = `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D uCol, uH, uMat;
+uniform vec2 uScreen, uOff, uWorld, uTexel;
+uniform float uScale, uNow, uPpc, uGrain;
+uniform vec4 uCanvas;
+uniform vec3 uStick; // x, y, height (cm)
+uniform float uShowStick; uniform vec2 uStickDir;
+
+out vec4 o;
+${GLSL_NOISE}
+
+vec3 floorBoards(vec2 w){
+  float plankW = 17.5;
+  float row = floor(w.y / plankW);
+  float off = hash12(vec2(row, 3.1)) * 300.0;
+  float seg = floor((w.x + off) / 260.0);
+  vec2 id = vec2(row, seg);
+  float tone = hash12(id);
+  vec3 base = mix(vec3(0.40,0.30,0.21), vec3(0.52,0.40,0.28), tone);
+  float grain = fbm(vec2((w.x+off)*0.035, w.y*0.9 + tone*40.0));
+  float fine = vnoise(vec2((w.x+off)*0.6, w.y*6.0));
+  base *= 0.82 + 0.3*grain + 0.06*fine;
+  // knots
+  vec2 kc = vec2(fract((w.x + off)/260.0) , fract(w.y/plankW));
+  float knot = smoothstep(0.08, 0.0, length((kc - vec2(hash12(id+7.0), 0.5))*vec2(260.0/plankW*0.25, 1.0)) - 0.02);
+  base *= 1.0 - 0.12*knot;
+  float gy = abs(fract(w.y / plankW) - 0.5) * plankW;
+  float gap = smoothstep(plankW*0.5 - 0.25, plankW*0.5 - 0.05, gy);
+  float gx = abs(fract((w.x + off)/260.0) - 0.5) * 260.0;
+  gap = max(gap, smoothstep(129.85, 129.98, gx));
+  base *= 1.0 - 0.75*gap;
+  // old dried paint from years of work: sparse and dusty
+  float sp = vnoise(w*vec2(0.5, 1.4) + 13.0) * 0.7 + vnoise(w*3.0) * 0.3;
+  float zone = smoothstep(0.55, 0.8, fbm3(w*0.02 + 4.0));
+  float spots = smoothstep(0.78, 0.84, sp) * zone;
+  vec3 old = mix(vec3(0.08), vec3(0.72,0.7,0.64), step(0.6, vnoise(w*0.07)));
+  base = mix(base, old, spots*0.55);
+  // dust
+  base = mix(base, vec3(0.55,0.5,0.42), 0.12*fbm3(w*0.05));
+  return base;
+}
+
+vec3 duck(vec2 w){
+  float warp = vnoise(vec2(w.x*42.0, w.y*0.7));
+  float weft = vnoise(vec2(w.x*0.7, w.y*42.0));
+  float slub = smoothstep(0.75, 0.95, vnoise(vec2(w.x*0.4, w.y*9.0))) * 0.5 + smoothstep(0.78, 0.97, vnoise(vec2(w.x*9.0, w.y*0.4))) * 0.5;
+  vec3 c = vec3(0.835, 0.785, 0.68);
+  c *= 0.93 + 0.05*warp + 0.05*weft + 0.03*slub;
+  c = mix(c, c*vec3(0.97,0.95,0.9), fbm3(w*0.03));
+  return c;
+}
+
+void main(){
+  vec2 sp = vec2(gl_FragCoord.x, uScreen.y - gl_FragCoord.y);
+  vec2 w = (sp - uOff) / uScale;
+  bool onCanvas = w.x >= uCanvas.x && w.x <= uCanvas.z && w.y >= uCanvas.y && w.y <= uCanvas.w;
+  vec3 L = normalize(vec3(-0.55, -0.7, 0.75));
+  vec3 base;
+  if (onCanvas) base = duck(w);
+  else {
+    base = floorBoards(w);
+    vec2 sh = w + L.xy * 0.9;
+    float outside = max(max(uCanvas.x - sh.x, sh.x - uCanvas.z), max(uCanvas.y - sh.y, sh.y - uCanvas.w));
+    base *= 1.0 - 0.45 * smoothstep(1.2, -0.2, outside);
+  }
+  o = vec4(base, 1.0);
+}`;
+
 const COVER_FS = `#version 300 es
 precision highp float;
 in vec2 vUv;
@@ -301,6 +373,7 @@ export function create(shell) {
   const pSplat = program(gl, SPLAT_VS, SPLAT_FS);
   const pAdd = program(gl, QUAD_VS, ADD_FS);
   const pComp = program(gl, QUAD_VS, COMPOSITE_FS);
+  const pBg = program(gl, QUAD_VS, BG_FS);
   const pCover = program(gl, QUAD_VS, COVER_FS);
   const Q = quad(gl);
 
@@ -809,9 +882,24 @@ export function create(shell) {
     count = 0;
   }
 
-  function composite(fb, w, h, scale, off, showStick, grain) {
+  // the floor and the raw canvas never change: draw them once per size
+  let bg = null;
+  function makeBg(w, h, scale, off) {
+    const t = texture(gl, w, h, { filter: gl.NEAREST });
+    const fb = framebuffer(gl, t);
+    target(gl, fb);
+    use(gl, pBg, {
+      uScreen: [w, h], uOff: off, uWorld: [WORLD.w, WORLD.h], uScale: scale,
+      uCanvas: [CANVAS.x0, CANVAS.y0, CANVAS.x1, CANVAS.y1],
+    });
+    Q.draw();
+    return { t, fb, w, h };
+  }
+  function dropBg(b) { if (b) { gl.deleteFramebuffer(b.fb); gl.deleteTexture(b.t); } }
+  function composite(fb, w, h, scale, off, showStick, grain, bgTex) {
     target(gl, fb);
     use(gl, pComp, {
+      uBgMode: 1, uBg: bgTex,
       uCol: colTex, uH: hTex, uMat: matTex,
       uScreen: [w, h], uOff: off, uWorld: [WORLD.w, WORLD.h], uTexel: [1 / TW, 1 / TH],
       uScale: scale, uNow: now(), uPpc: ppc, uGrain: grain,
@@ -915,7 +1003,8 @@ export function create(shell) {
     for (let i = 0; i < sub; i++) step(dt / sub);
     updateSound(dt);
     flushSplats();
-    composite(null, S.w, S.h, S.scale, S.off, S.over || S.pouring, 0.025);
+    if (!bg || bg.w !== S.w || bg.h !== S.h || bg.scale !== S.scale) { dropBg(bg); bg = makeBg(S.w, S.h, S.scale, S.off); bg.scale = S.scale; }
+    composite(null, S.w, S.h, S.scale, S.off, S.over || S.pouring, 0.025, bg.t);
     drawAir();
     // UI
     loadBar.style.transform = `scaleX(${S.load.toFixed(3)})`;
@@ -943,7 +1032,9 @@ export function create(shell) {
     const t = texture(gl, OW, OH, {});
     const fb = framebuffer(gl, t);
     const sc = OW / (CANVAS.x1 - CANVAS.x0);
-    composite(fb, OW, OH, sc, [-CANVAS.x0 * sc, -CANVAS.y0 * sc], false, 0.0);
+    const hb = makeBg(OW, OH, sc, [-CANVAS.x0 * sc, -CANVAS.y0 * sc]);
+    composite(fb, OW, OH, sc, [-CANVAS.x0 * sc, -CANVAS.y0 * sc], false, 0.0, hb.t);
+    dropBg(hb);
     const c2 = readToCanvas(gl, fb, OW, OH);
     gl.deleteFramebuffer(fb); gl.deleteTexture(t);
     const vols = Object.entries(S.stats.vol).sort((a, b) => b[1] - a[1]);

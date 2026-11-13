@@ -59,7 +59,11 @@ button { font: inherit; color: inherit; }
   padding-block: clamp(20px, 4vw, 48px) 40px;
   max-width: 1240px; margin: 0 auto;
   display: grid; gap: clamp(28px, 4vw, 52px);
+  position: relative;
 }
+#lobby > * { position: relative; z-index: 1; }
+#lobby > canvas.drip { position: absolute; z-index: 0; left: 0; top: 0; pointer-events: none; }
+html.dripping, html.dripping * { cursor: crosshair; user-select: none; -webkit-user-select: none; }
 .masthead { display: flex; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap;
   font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
   border-bottom: 1px solid var(--rule); padding-bottom: 10px; }
@@ -244,6 +248,7 @@ button { font: inherit; color: inherit; }
 </style>
 
 <main id="lobby">
+  <canvas class="drip" aria-hidden="true"></canvas>
   <div class="masthead">
     <span>The New York School, re-enacted</span>
     <span>Five rooms · paint, physics, sound</span>
@@ -261,7 +266,7 @@ button { font: inherit; color: inherit; }
   <ol class="rooms" id="room-list"></ol>
 
   <div class="lobby-foot">
-    <p>Each room is a working simulation of one way of making a picture between 1943 and 1970. The paint has weight, the canvas drinks, the colour hums. When something on the canvas holds you, press <b>Hang</b> and it joins your exhibition with a museum label. Sound matters; headphones help. A mouse is best, touch works.</p>
+    <p>Each room is a working simulation of one way of making a picture between 1943 and 1970. The paint has weight, the canvas drinks, the colour hums. When something on the canvas holds you, press <b>Hang</b> and it joins your exhibition with a museum label. Sound matters; headphones help. A mouse is best, touch works. Even this page takes paint: press and drag anywhere.</p>
     <button class="btn-cat" id="to-cat" type="button">Your exhibition <b id="cat-count">0</b></button>
   </div>
 </main>

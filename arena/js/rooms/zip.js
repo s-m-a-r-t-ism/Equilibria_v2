@@ -401,6 +401,7 @@ export function create(shell) {
 
   /* ---------- lifecycle ---------- */
   function resize(w, h, dpr) {
+    dpr = Math.min(dpr, 1.5);
     S.dpr = dpr; S.w = Math.round(w * dpr); S.h = Math.round(h * dpr); cv.width = S.w; cv.height = S.h;
     const mw = w - Math.max(40, w * 0.08), mh = h - 260;
     let cw = mw, ch = cw * PH / PW;

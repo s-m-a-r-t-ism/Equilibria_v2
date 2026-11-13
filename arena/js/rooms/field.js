@@ -11,7 +11,7 @@ export const meta = {
   numeral: 'III',
   name: 'Field',
   after: 'After Mark Rothko',
-  place: 'A dim room with a bench',
+  place: 'A dim room',
   years: '1949–1970',
   swatch: 'linear-gradient(90deg,#d7652a 0 25%,#7a1f2a 25% 55%,#2a1620 55% 80%,#8f8d8a 80%)',
   lede: 'Soft-edged fields of colour in a dim room. Walk up to eighteen inches. Drag the edges, glaze the colour. Stay, and the years pass: the palette darkens toward the chapel.',
@@ -72,7 +72,8 @@ const FS = `#version 300 es
 precision highp float;
 in vec2 vUv;
 uniform vec2 uScreen, uCenter;
-uniform float uScale, uTime, uBreath, uExposure, uDist, uBorder, uFrameOnly, uSeed, uLate;
+uniform float uScale, uTime, uBreath, uExposure, uDist, uBorder, uFrameOnly, uSeed, uLate, uUseCache;
+uniform sampler2D uCache;
 uniform vec3 uGround;
 uniform vec3 uCol[3];
 uniform vec4 uRect[3];   // x0,y0,x1,y1 in painting units 0..1
@@ -129,9 +130,6 @@ vec3 painting(vec2 p){
   float border = uBorder * (1.0 - smoothstep(4.5, 5.2 + vnoise(p * 300.0) * 0.6, bx));
   col = mix(col, lin(vec3(0.93, 0.92, 0.89)) * (0.95 + 0.05 * vnoise(p * 80.0)), border);
   // fine weave, visible only when close
-  float weave = sin(cm.x * 6.2831 * 12.0) * sin(cm.y * 6.2831 * 12.0);
-  float near = smoothstep(0.55, 1.0, uDist);
-  col *= 1.0 + weave * 0.035 * near + (vnoise(cm * 4.0) - 0.5) * 0.06 * near;
   return col;
 }
 
@@ -170,7 +168,12 @@ void main(){
   float shadow = smoothstep(16.0, -2.0, max(max(-(w.x - 6.0), (w.x - 6.0) - uPaint.x), max(-(w.y - 9.0), (w.y - 9.0) - uPaint.y)));
   col *= 1.0 - 0.45 * shadow * step(0.0, outside);
   if (outside <= 0.0) {
-    col = painting(p);
+    col = uUseCache > 0.5 ? lin(texture(uCache, vec2(p.x, 1.0 - p.y)).rgb) : painting(p);
+    // fine weave, visible only when close
+    vec2 cmw = p * uPaint;
+    float weave = sin(cmw.x * 6.2831 * 12.0) * sin(cmw.y * 6.2831 * 12.0);
+    float near = smoothstep(0.55, 1.0, uDist);
+    col *= 1.0 + weave * 0.035 * near + (vnoise(cmw * 4.0) - 0.5) * 0.06 * near;
     // hover hint on an edge
     if (uHover.x >= 0.0) {
       int i = int(uHover.x);
@@ -190,15 +193,6 @@ void main(){
   // gallery light pool
   vec2 sc = (sp / uScreen - 0.5) * vec2(uScreen.x / uScreen.y, 1.0);
   col *= 1.0 - 0.35 * dot(sc, sc) * (1.0 - uDist * 0.6);
-  // the bench, a dark shape you walk past
-  float benchTop = mix(0.8, 1.35, smoothstep(0.0, 0.55, uDist)) * uScreen.y;
-  float bw = uScreen.x * 0.36;
-  if (sp.y > benchTop && abs(sp.x - uScreen.x * 0.5) < bw) {
-    float leg = step(benchTop + uScreen.y * 0.03, sp.y);
-    float legs = step(abs(abs(sp.x - uScreen.x * 0.5) - bw * 0.85), uScreen.x * 0.02);
-    float seat = 1.0 - leg;
-    col = mix(col, vec3(0.004, 0.0035, 0.003), max(seat, leg * legs));
-  }
   vec3 outc = pow(max(col, 0.0), vec3(1.0/2.2));
   outc += (hash12(sp + fract(uTime) * 33.0) - 0.5) * 0.018;
   o = vec4(outc, 1.0);
@@ -209,11 +203,15 @@ export function create(shell) {
   const gl = createGL(cv);
   const prog = program(gl, QUAD_VS, FS);
   const Q = quad(gl);
+  const CW = 1000, CH = Math.round(CW * PH / PW);
+  const cacheTex = texture(gl, CW, CH, {});
+  const cacheFb = framebuffer(gl, cacheTex);
+  const dummy = texture(gl, 1, 1, {});
 
   const S = {
     w: 1, h: 1, dpr: 1, dist: 0, distT: 0, presence: 0, time: 0, active: false,
     rects: null, glaze: [[1, 1, 1], [1, 1, 1], [1, 1, 1]], glazeAmt: [0, 0, 0], tint: [null, null, null],
-    hover: [-1, 0], drag: null, closest: 0, seed: Math.random() * 100, glazes: 0, sway: [0, 0], swayT: [0, 0],
+    hover: [-1, 0], drag: null, cacheT: 0, cacheDirty: true, closest: 0, seed: Math.random() * 100, glazes: 0, sway: [0, 0], swayT: [0, 0],
   };
   function defaultRects() {
     const v = Math.random();
@@ -331,6 +329,7 @@ export function create(shell) {
     S.glaze[i] = c.map((v) => Math.min(1, v * 1.15 + 0.08));
     S.glazeAmt[i] = Math.min(0.75, S.glazeAmt[i] + 0.22);
     S.glazes++;
+    S.cacheDirty = true;
     if (snd) chime(i);
   }
 
@@ -398,7 +397,7 @@ export function create(shell) {
   }
 
   /* ---------- lifecycle ---------- */
-  function resize(w, h, dpr) { S.dpr = dpr; S.w = Math.round(w * dpr); S.h = Math.round(h * dpr); cv.width = S.w; cv.height = S.h; }
+  function resize(w, h, dpr) { dpr = Math.min(dpr, 1.5); S.dpr = dpr; S.w = Math.round(w * dpr); S.h = Math.round(h * dpr); cv.width = S.w; cv.height = S.h; }
 
   function uniforms(pal, breath, frameOnly) {
     const yr = yearNow();
@@ -424,8 +423,16 @@ export function create(shell) {
     const breath = Math.sin(S.time * Math.PI * 2 / 10); // six breaths a minute
     const pal = paletteAt(yearNow());
     const { scale, center } = cam(S.w, S.h);
+    // the painting itself is redrawn into a texture only now and then
+    S.cacheT -= dt;
+    if (S.cacheT <= 0 || S.drag || S.cacheDirty) {
+      S.cacheT = 0.35; S.cacheDirty = false;
+      target(gl, cacheFb);
+      use(gl, prog, { ...uniforms(pal, 0, true), uExposure: 1, uScreen: [CW, CH], uCenter: [PW / 2, PH / 2], uScale: CW / PW, uUseCache: 0, uCache: dummy });
+      Q.draw();
+    }
     target(gl, null);
-    use(gl, prog, { ...uniforms(pal, breath, false), uScreen: [S.w, S.h], uCenter: center, uScale: scale });
+    use(gl, prog, { ...uniforms(pal, breath, false), uScreen: [S.w, S.h], uCenter: center, uScale: scale, uUseCache: 1, uCache: cacheTex });
     Q.draw();
     updateSound(pal, breath);
     // UI
@@ -447,7 +454,7 @@ export function create(shell) {
     const fb = framebuffer(gl, t);
     const pal = paletteAt(yearNow());
     target(gl, fb);
-    use(gl, prog, { ...uniforms(pal, 0, true), uScreen: [OW, OH], uCenter: [PW / 2, PH / 2], uScale: OW / PW });
+    use(gl, prog, { ...uniforms(pal, 0, true), uScreen: [OW, OH], uCenter: [PW / 2, PH / 2], uScale: OW / PW, uUseCache: 0, uCache: dummy });
     Q.draw();
     const c2 = readToCanvas(gl, fb, OW, OH);
     gl.deleteFramebuffer(fb); gl.deleteTexture(t);

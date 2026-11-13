@@ -503,6 +503,7 @@ export function create(shell) {
 
   /* ---------- lifecycle ---------- */
   function resize(w, h, dpr) {
+    dpr = Math.min(dpr, 1.5);
     S.dpr = dpr;
     const maxW = Math.min(w - 32, w * 0.84), maxH = h - 250;
     let cw = maxW, ch = cw * HCM / WCM;

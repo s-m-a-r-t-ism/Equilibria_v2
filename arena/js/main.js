@@ -285,6 +285,87 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+/* ---------------- the lobby takes paint ---------------- */
+function lobbyDrip() {
+  const cv = $('canvas.drip', lobby);
+  const ctx = cv.getContext('2d');
+  let W = 0, H = 0, dpr = 1;
+  const ink = () => getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#161412';
+  let marks = []; // remembered strokes so a resize can redraw them
+  function size() {
+    const w = lobby.clientWidth, h = lobby.scrollHeight;
+    if (w === W && h === H) return;
+    W = w; H = h; dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    redraw();
+  }
+  function seg(m) {
+    ctx.strokeStyle = ink(); ctx.fillStyle = ink();
+    ctx.globalAlpha = m.a;
+    if (m.d) { ctx.beginPath(); ctx.arc(m.x0 * W, m.y0, m.w, 0, 6.2832); ctx.fill(); return; }
+    ctx.lineWidth = m.w; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(m.x0 * W, m.y0); ctx.lineTo(m.x1 * W, m.y1); ctx.stroke();
+  }
+  function redraw() { ctx.clearRect(0, 0, W, H); marks.forEach(seg); ctx.globalAlpha = 1; }
+  function add(m) { marks.push(m); if (marks.length > 20000) marks = marks.slice(-15000); seg(m); ctx.globalAlpha = 1; }
+  // old paint: a few faint Levy-flight threads already on the floor
+  function seed() {
+    for (let t = 0; t < 4; t++) {
+      let x = 0.3 + Math.random() * 0.65, y = 80 + Math.random() * 600, a = Math.random() * 6.28, turn = 0;
+      const alpha = 0.05 + Math.random() * 0.05;
+      const n = 160 + Math.random() * 200;
+      for (let i = 0; i < n; i++) {
+        // curvature wanders, so the thread sweeps, loops, straightens
+        turn = turn * 0.92 + (Math.random() - 0.5) * 0.22;
+        a += turn;
+        const step = 6 + Math.random() * 6;
+        let nx = x + Math.cos(a) * step / 1200, ny = y + Math.sin(a) * step;
+        if (nx < 0.02 || nx > 0.98) { a = Math.PI - a; nx = x; }
+        if (ny < 20 || ny > 900) { a = -a; ny = y; }
+        const w = 0.6 + Math.abs(Math.sin(i * 0.05 + t)) * 2.2;
+        marks.push({ x0: x, y0: y, x1: nx, y1: ny, w, a: alpha });
+        if (Math.random() < 0.03) for (let k = 0; k < 5; k++) marks.push({ d: 1, x0: nx + (Math.random() - 0.5) * 0.02, y0: ny + (Math.random() - 0.5) * 24, w: Math.random() * 1.8 + 0.4, a: alpha });
+        x = nx; y = ny;
+      }
+    }
+  }
+  seed();
+  // a lagging, coiling thread under a held pointer
+  let down = false, hist = [], last = null, phase = 0;
+  lobby.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.target.closest('button, a, blockquote')) return;
+    down = true; hist = []; last = null; document.documentElement.classList.add('dripping');
+  });
+  window.addEventListener('pointerup', () => { down = false; last = null; document.documentElement.classList.remove('dripping'); });
+  lobby.addEventListener('pointermove', (e) => {
+    if (!down) return;
+    const r = lobby.getBoundingClientRect();
+    hist.push({ x: e.clientX - r.left, y: e.clientY - r.top, t: performance.now() });
+  });
+  function tickDrip() {
+    if (!lobby.hidden) {
+      size();
+      const now = performance.now();
+      while (hist.length && now - hist[0].t > 110) {
+        const p = hist.shift();
+        const nxt = hist[0];
+        const v = nxt ? Math.hypot(nxt.x - p.x, nxt.y - p.y) / Math.max(1, nxt.t - p.t) : 0; // px per ms
+        phase += 0.9;
+        const coil = Math.max(0, 1 - v / 0.6) * 5;
+        const x = p.x + Math.cos(phase) * coil, y = p.y + Math.sin(phase) * coil;
+        const w = Math.max(0.8, 4.2 - v * 2.2);
+        if (last) add({ x0: last.x / W, y0: last.y, x1: x / W, y1: y, w, a: 0.9 });
+        if (v > 1.4 && Math.random() < 0.3) add({ d: 1, x0: (x + (Math.random() - 0.5) * 30) / W, y0: y + (Math.random() - 0.5) * 30, w: Math.random() * 2.2 + 0.5, a: 0.9 });
+        last = { x, y };
+      }
+    }
+    requestAnimationFrame(tickDrip);
+  }
+  requestAnimationFrame(tickDrip);
+}
+lobbyDrip();
+
 renderLobby();
 route();
 requestAnimationFrame(loop);

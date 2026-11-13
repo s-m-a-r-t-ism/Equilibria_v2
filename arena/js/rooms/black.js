@@ -60,10 +60,10 @@ void main(){
   if (inside) {
     ivec2 cell = ivec2(clamp(floor(p * 3.0), 0.0, 2.0));
     bool midRow = cell.y == 1, midCol = cell.x == 1;
-    vec3 corner = vec3(0.0044, 0.0041, 0.0052);   // bluish black
-    vec3 rowArm = vec3(0.0041, 0.0049, 0.0044);   // greenish black
-    vec3 colArm = vec3(0.0056, 0.0039, 0.0037);   // reddish black
-    vec3 centre = vec3(0.0050, 0.0043, 0.0043);
+    vec3 corner = vec3(0.0044, 0.0042, 0.0050);   // bluish black
+    vec3 rowArm = vec3(0.0042, 0.0048, 0.0044);   // greenish black
+    vec3 colArm = vec3(0.0053, 0.0041, 0.0039);   // reddish black
+    vec3 centre = vec3(0.0049, 0.0044, 0.0043);
     c = corner;
     if (midRow) c = rowArm;
     if (midCol) c = colArm;
@@ -87,7 +87,7 @@ void main(){
   vec3 seen = c * purk * gain;
   // contrast stretch around the mean level of the painting
   float mean = 0.0044 * gain;
-  seen = mean + (seen - vec3(mean)) * mix(1.0, 2.6, a);
+  seen = mean + (seen - vec3(mean)) * mix(1.0, 3.6, a);
   // eigengrau: the eye's own grain, rising in the dark
   float g = (hash12(sp * 0.5 + floor(uTime * 24.0) * 13.7) - 0.5);
   float g2 = (vnoise(sp * 0.08 + uTime * 0.7) - 0.5);
@@ -174,6 +174,7 @@ export function create(shell) {
   }
 
   function resize(w, h, dpr) {
+    dpr = Math.min(dpr, 1.25);
     S.dpr = dpr; S.w = Math.round(w * dpr); S.h = Math.round(h * dpr); cv.width = S.w; cv.height = S.h;
     const side = Math.min(w * 0.82, h * 0.66);
     const x0 = (w - side) / 2, y0 = (h - side) / 2 - h * 0.02;
