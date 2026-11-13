@@ -229,6 +229,16 @@ html.dripping, html.dripping * { cursor: crosshair; user-select: none; -webkit-u
 .back { all: unset; cursor: pointer; font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .back:hover { color: var(--ink); }
 
+#walk { position: fixed; inset: 0; z-index: 20; background: radial-gradient(ellipse at 50% 30%, #3b3732 0%, #1c1a18 55%, #0f0e0d 100%); color: var(--hud-fg); display: grid; grid-template-rows: 1fr auto; }
+.walk-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 300px); gap: 40px; align-items: center; padding: calc(env(safe-area-inset-top, 0px) + 40px) max(24px, env(safe-area-inset-right, 0px)) 10px max(24px, env(safe-area-inset-left, 0px)); min-height: 0; transition: opacity .6s; }
+.walk-fig { margin: 0; display: grid; place-items: center; min-height: 0; height: 100%; position: relative; }
+.walk-fig::before { content: ""; position: absolute; left: 10%; right: 10%; top: -30%; height: 70%; background: radial-gradient(ellipse at 50% 0%, rgba(255,240,210,.18), rgba(255,240,210,0) 70%); pointer-events: none; }
+.walk-fig img { max-width: 100%; max-height: calc(100vh - 170px); object-fit: contain; box-shadow: 0 30px 60px rgba(0,0,0,.6), 0 6px 14px rgba(0,0,0,.5); }
+.walk-label { background: #ebe5d8; color: #1b1814; padding: 16px 18px; box-shadow: 0 6px 16px rgba(0,0,0,.4); align-self: end; margin-bottom: 8vh; }
+.walk-label .med, .walk-label .facts, .walk-label .review span { color: #5f584c; }
+.walk-label .review { border-top-color: rgba(27,24,20,.2); }
+.walk-nav { display: flex; gap: 10px; justify-content: center; align-items: center; padding: 14px 16px calc(env(safe-area-inset-bottom, 0px) + 18px); font-family: var(--mono); font-size: 12px; color: var(--hud-dim); }
+@media (max-width: 760px) { .walk-inner { grid-template-columns: 1fr; gap: 16px; } .walk-fig img { max-height: 52vh; } .walk-label { margin-bottom: 0; align-self: start; } }
 .nogl { position: absolute; inset: 0; display: grid; place-items: center; color: var(--hud-fg); font-family: var(--serif); font-size: 18px; padding: 24px; text-align: center; }
 
 @media (max-width: 640px) {
@@ -278,10 +288,24 @@ html.dripping, html.dripping * { cursor: crosshair; user-select: none; -webkit-u
   <div>
     <h1>Your Exhibition</h1>
     <p class="intro">Everything you hung, with its label. Labels are written from what happened on the canvas: how long you worked, how far the paint travelled, how the picture measures. The reviews are imagined. Long-press or right-click a picture to save it.</p>
+    <div style="margin-top:18px"><button class="btn-cat" id="walk-open" type="button">Walk through the exhibition</button></div>
   </div>
   <div class="works" id="works"></div>
 </main>
 
 <div id="stage" hidden></div>
+
+<div id="walk" hidden>
+  <div class="walk-inner">
+    <figure class="walk-fig"><img alt="" id="walk-img"></figure>
+    <div class="walk-label label" id="walk-label"></div>
+  </div>
+  <div class="walk-nav">
+    <button class="hbtn" id="walk-prev" type="button">← Previous</button>
+    <span id="walk-count"></span>
+    <button class="hbtn" id="walk-next" type="button">Next →</button>
+    <button class="hbtn" id="walk-close" type="button">Leave</button>
+  </div>
+</div>
 
 <script type="module" src="js/main.js"></script>

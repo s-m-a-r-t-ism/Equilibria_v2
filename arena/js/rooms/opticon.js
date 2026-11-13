@@ -348,6 +348,14 @@ export function create(shell) {
     const cr = cropRect();
     const k = CW / (cr.x1 - cr.x0);
     const map = (px, py) => [(px - cr.x0) * k, (py - cr.y0) * k];
+    if (!S.strokes.length) {
+      // nothing drawn: the directory itself, enlarged, is the picture
+      x.save();
+      try { x.filter = 'grayscale(1) contrast(1.4) blur(1px)'; } catch {}
+      x.globalAlpha = 0.92;
+      x.drawImage(S.page.canvas, cr.x0 * PW, cr.y0 * PW, (cr.x1 - cr.x0) * PW, (cr.y1 - cr.y0) * PW, 0, 0, CW, CH);
+      x.restore();
+    }
     // painting order: blacks first, then whites cut back in
     const order = [...S.strokes.filter((s) => !s.white), ...S.strokes.filter((s) => s.white)];
     S.paintAnim = { c, x, order, i: 0, t: 0, map, k };
@@ -540,7 +548,7 @@ export function create(shell) {
         dims: `${canvasCm.h} × ${canvasCm.w} cm`,
         facts: [
           `Enlarged about ${Math.round(canvasCm.w / ((cr.x1 - cr.x0) * 23))}× from a ${((cr.x1 - cr.x0) * 23).toFixed(1)} cm detail of page ${S.page.pageNo} (${S.page.range})`,
-          `${blacks} black stroke${blacks === 1 ? '' : 's'}${whites ? `, ${whites} cut back in white` : ''}`,
+          blacks ? `${blacks} black stroke${blacks === 1 ? '' : 's'}${whites ? `, ${whites} cut back in white` : ''}` : 'No strokes: the listings themselves, enlarged',
         ],
         review: { who: 'A sign painter from Wilkes-Barre, imagined', text: blacks > 6 ? 'Too many strokes for one wall, but the big one holds it up like a girder.' : blacks ? 'A few strokes, the size of a coal tipple. You can feel the brush run dry.' : 'A page from the phone book, very large. Someone will call.' },
       },
@@ -549,6 +557,8 @@ export function create(shell) {
 
   let hinted = false;
   newPage();
+  // the directory is set in Newsreader; once the font has arrived, set a fresh page in it
+  try { document.fonts && document.fonts.load('12px "Newsreader"').then(() => { if (!S.strokes.length && !S.cur) newPage(); }); } catch {}
   return {
     resize, frame, hang,
     fresh() { newPage(); shell.toast('A new page, torn from the directory.'); },

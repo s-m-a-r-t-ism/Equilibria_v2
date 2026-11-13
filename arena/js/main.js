@@ -65,14 +65,7 @@ function renderCatalogue() {
     d.className = 'work';
     d.innerHTML = `
       <div class="frame"><img alt="${esc(L.title)}" src="${w.image}"></div>
-      <div class="label">
-        <span class="artist">${esc(L.artist || 'You')} <span style="font-weight:400;color:var(--muted)">(b. ${esc(L.born || 'unknown')})</span></span>
-        <span class="title">${esc(L.title)}<span style="font-style:normal">, ${esc(L.year)}</span></span>
-        <span class="med">${esc(L.medium)}</span>
-        <span class="med">${esc(L.dims)}</span>
-        ${L.facts && L.facts.length ? `<span class="facts">${L.facts.map(esc).join('<br>')}</span>` : ''}
-        ${L.review ? `<div class="review"><span>${esc(L.review.who)}</span>${esc(L.review.text)}</div>` : ''}
-      </div>
+      <div class="label">${labelHTML(L)}</div>
       <button class="rm" type="button">Take it down</button>`;
     d.querySelector('.rm').addEventListener('click', () => {
       works = works.filter((x) => x.id !== w.id); saveWorks(); renderCatalogue(); $('#cat-count').textContent = works.length;
@@ -80,6 +73,42 @@ function renderCatalogue() {
     box.appendChild(d);
   });
 }
+/* ---------------- walk through ---------------- */
+let walkI = 0;
+const walkEl = $('#walk');
+function labelHTML(L) {
+  return `<span class="artist">${esc(L.artist || 'You')} <span style="font-weight:400">(b. ${esc(L.born || 'unknown')})</span></span>
+    <span class="title">${esc(L.title)}<span style="font-style:normal">, ${esc(L.year)}</span></span>
+    <span class="med">${esc(L.medium)}</span>
+    <span class="med">${esc(L.dims)}</span>
+    ${L.facts && L.facts.length ? `<span class="facts">${L.facts.map(esc).join('<br>')}</span>` : ''}
+    ${L.review ? `<div class="review"><span>${esc(L.review.who)}</span>${esc(L.review.text)}</div>` : ''}`;
+}
+function walkShow(i) {
+  if (!works.length) return;
+  walkI = (i + works.length) % works.length;
+  const w = [...works].reverse()[walkI];
+  const inner = $('.walk-inner', walkEl);
+  inner.style.opacity = 0;
+  setTimeout(() => {
+    $('#walk-img').src = w.image; $('#walk-img').alt = w.label.title;
+    $('#walk-label').innerHTML = labelHTML(w.label);
+    $('#walk-count').textContent = `${walkI + 1} / ${works.length}`;
+    inner.style.opacity = 1;
+  }, 250);
+}
+$('#walk-open').addEventListener('click', () => { if (!works.length) return; walkEl.hidden = false; walkShow(0); });
+$('#walk-next').addEventListener('click', () => walkShow(walkI + 1));
+$('#walk-prev').addEventListener('click', () => walkShow(walkI - 1));
+$('#walk-close').addEventListener('click', () => { walkEl.hidden = true; });
+$('#walk-img').addEventListener('click', () => walkShow(walkI + 1));
+window.addEventListener('keydown', (e) => {
+  if (walkEl.hidden) return;
+  if (e.key === 'ArrowRight' || e.key === ' ') { walkShow(walkI + 1); e.preventDefault(); }
+  if (e.key === 'ArrowLeft') walkShow(walkI - 1);
+  if (e.key === 'Escape') walkEl.hidden = true;
+});
+
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
 /* ---------------- room shell ---------------- */
@@ -209,6 +238,7 @@ function route() {
     current.el.hidden = true;
     current = null;
   }
+  walkEl.hidden = true;
   if (id === 'catalogue') {
     lobby.hidden = true; stage.hidden = true; catalogueEl.hidden = false;
     renderCatalogue(); window.scrollTo(0, 0);
